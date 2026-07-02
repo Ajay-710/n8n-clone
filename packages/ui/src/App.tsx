@@ -76,7 +76,7 @@ function Sidebar() {
   );
 }
 
-function ConfigPanel({ selectedNode, updateNodeData }: { selectedNode: Node | null, updateNodeData: (id: string, key: string, value: any) => void }) {
+function ConfigPanel({ selectedNode, updateNodeData, deleteNode }: { selectedNode: Node | null, updateNodeData: (id: string, key: string, value: any) => void, deleteNode: (id: string) => void }) {
   if (!selectedNode) {
     return (
       <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10">
@@ -90,7 +90,7 @@ function ConfigPanel({ selectedNode, updateNodeData }: { selectedNode: Node | nu
   const parameters = data.parameters || {};
 
   return (
-    <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto">
+    <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative">
       <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Config: {data.label}</h2>
       
       <div className="flex flex-col gap-2">
@@ -160,12 +160,20 @@ function ConfigPanel({ selectedNode, updateNodeData }: { selectedNode: Node | nu
           />
         </div>
       )}
+
+      <button 
+        onClick={() => deleteNode(id)}
+        className="mt-8 px-4 py-2 border-2 border-[#ff4444] text-[#ff4444] font-bold text-sm tracking-widest hover:bg-[#ff4444] hover:text-[#161616] transition-all uppercase cursor-pointer"
+      >
+        DELETE NODE
+      </button>
     </aside>
   );
 }
 
 function FlowBuilder() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -251,6 +259,12 @@ function FlowBuilder() {
     );
   }, [setNodes]);
 
+  const deleteNode = useCallback((id: string) => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+    setSelectedNodeId(null);
+  }, [setNodes, setEdges]);
+
   const saveWorkflow = async () => {
     try {
       await fetch(`/api/v1/workflows/${WORKFLOW_ID}`, {
@@ -264,6 +278,35 @@ function FlowBuilder() {
     }
   };
 
+  const exportJSON = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes, edges }, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "n7n-workflow.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const importJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        if (json.nodes) setNodes(json.nodes);
+        if (json.edges) setEdges(json.edges);
+        alert('Workflow imported!');
+      } catch (err) {
+        alert('Invalid JSON file');
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   return (
@@ -271,21 +314,35 @@ function FlowBuilder() {
       <header className="h-16 border-b-2 border-[#333] flex items-center px-6 bg-[#161616] z-10 shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 border-2 border-[#e5e5e5] bg-[#161616] flex items-center justify-center">
-            <span className="text-[#e5e5e5] font-bold text-xl uppercase">Z</span>
+            <span className="text-[#e5e5e5] font-bold text-xl uppercase">N</span>
           </div>
-          <h1 className="font-bold text-xl tracking-widest text-[#e5e5e5]">Zaggonaut</h1>
+          <h1 className="font-bold text-xl tracking-widest text-[#e5e5e5]">n7n</h1>
         </div>
         
-        <div className="ml-auto flex items-center gap-8">
-          <nav className="flex gap-4 text-sm font-bold tracking-widest lowercase">
-            <span className="text-[#666] cursor-not-allowed">home</span>
-            <span className="text-[#666] cursor-not-allowed">projects</span>
-            <span className="text-[#666] cursor-not-allowed">blog</span>
-          </nav>
+        <div className="ml-auto flex items-center gap-4">
+          <input 
+            type="file" 
+            accept=".json" 
+            ref={fileInputRef} 
+            onChange={importJSON} 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-1.5 border-2 border-[#333] text-[#999] font-bold text-xs tracking-widest hover:bg-[#333] hover:text-[#e5e5e5] transition-all uppercase cursor-pointer"
+          >
+            IMPORT JSON
+          </button>
+          <button 
+            onClick={exportJSON}
+            className="px-3 py-1.5 border-2 border-[#333] text-[#999] font-bold text-xs tracking-widest hover:bg-[#333] hover:text-[#e5e5e5] transition-all uppercase cursor-pointer"
+          >
+            EXPORT JSON
+          </button>
 
           <button 
             onClick={saveWorkflow}
-            className="px-4 py-1.5 border-2 border-[#666] text-[#e5e5e5] font-bold text-sm tracking-widest hover:bg-[#333] transition-all uppercase cursor-pointer"
+            className="ml-4 px-4 py-1.5 border-2 border-[#666] text-[#e5e5e5] font-bold text-sm tracking-widest hover:bg-[#333] transition-all uppercase cursor-pointer"
           >
             SAVE
           </button>
@@ -348,7 +405,7 @@ function FlowBuilder() {
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             fitView
-            className="zaggonaut-flow"
+            className="n7n-flow"
           >
             <Controls className="!bg-[#161616] !border-[#e5e5e5] !fill-[#e5e5e5]" />
             <MiniMap 
@@ -360,7 +417,7 @@ function FlowBuilder() {
           </ReactFlow>
         </main>
         
-        <ConfigPanel selectedNode={selectedNode} updateNodeData={updateNodeData} />
+        <ConfigPanel selectedNode={selectedNode} updateNodeData={updateNodeData} deleteNode={deleteNode} />
       </div>
     </div>
   );
