@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -6,9 +6,9 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   addEdge,
-  Connection,
-  Edge,
+  BackgroundVariant,
 } from 'reactflow';
+import type { Connection, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 const initialNodes = [
@@ -18,7 +18,7 @@ const initialNodes = [
 const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
 
 function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(
@@ -47,7 +47,7 @@ function App() {
                 });
                 const data = await res.json();
                 alert(`Execution started! Job ID: ${data.executionId}\nStatus: ${data.status}`);
-              } catch (e) {
+              } catch (e: any) {
                 alert(`Execution failed: ${e.message}`);
               }
             }}
@@ -73,7 +73,7 @@ function App() {
             maskColor="rgba(18, 13, 32, 0.8)" 
             className="!bg-[#09090b] !border-[#22d3ee]/30" 
           />
-          <Background variant="dots" gap={20} size={1.5} color="rgba(34,211,238,0.15)" />
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color="rgba(34,211,238,0.15)" />
         </ReactFlow>
       </main>
     </div>

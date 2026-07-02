@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+}
 
 @layer base {
   :root {
@@ -27,10 +33,12 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   body {
-    @apply bg-background text-foreground bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1f153a] via-background to-background min-h-screen;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    @apply bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1f153a] via-[#09090b] to-[#09090b] min-h-screen;
   }
 }
 
