@@ -861,8 +861,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
     return () => sse.close();
   }, [setNodes]);
 
-  // Load workflow on mount
-  useEffect(() => {
+  const loadActiveWorkflow = useCallback(() => {
     fetch(`/api/v1/workflows/${workflowId}`)
       .then(res => res.json())
       .then(data => {
@@ -878,11 +877,33 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
         }
       })
       .catch(err => console.error("Could not load workflow", err));
+  }, [workflowId, setNodes, setEdges]);
+
+  useEffect(() => {
+    if (showExecutions && selectedExecution && selectedExecution.workflowVersion) {
+      const versionNodes = selectedExecution.workflowVersion.nodes || [];
+      const execData = selectedExecution.executionData || {};
       
-    // Fetch execution history
+      const styledNodes = versionNodes.map((n: any) => {
+        if (execData.error && execData.error.includes(n.id)) { // basic check
+           return { ...n, className: '!border-[#ff4444] !bg-[#331111] shadow-[0_0_15px_rgba(255,68,68,0.4)]' };
+        } else if (execData[n.id]) {
+           return { ...n, className: '!border-[#00ffcc] !bg-[#113322] shadow-[0_0_15px_rgba(0,255,204,0.15)]' };
+        }
+        return n;
+      });
+      setNodes(styledNodes);
+      setEdges(selectedExecution.workflowVersion.connections || []);
+    } else {
+      loadActiveWorkflow();
+    }
+  }, [selectedExecution, showExecutions, loadActiveWorkflow, setNodes, setEdges]);
+
+  // Load initial data
+  useEffect(() => {
     fetchExecutions();
     fetchCredentials();
-  }, [workflowId, setNodes, setEdges]);
+  }, []);
 
   const [credentialsList, setCredentialsList] = useState<any[]>([]);
   const fetchCredentials = () => {

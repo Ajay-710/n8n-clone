@@ -164,6 +164,7 @@ export class AppController {
       const versionIds = workflow.WorkflowVersion.map(v => v.id);
       const executions = await this.prisma.execution.findMany({
         where: { workflowVersionId: { in: versionIds } },
+        include: { workflowVersion: true },
         orderBy: { startedAt: 'desc' },
         take: 50 // Limit to last 50 for the prototype
       });
