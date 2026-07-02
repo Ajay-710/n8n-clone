@@ -187,8 +187,17 @@ export class AppController {
     };
   }
 
-  @Post('webhook/:workflowId')
-  async webhookTrigger(@Param('workflowId') workflowId: string, @Body() body: any) {
+  @Get('webhook/:workflowId/:path')
+  async webhookTriggerGet(@Param('workflowId') workflowId: string, @Param('path') path: string, @Body() body: any) {
+    return this.processWebhook(workflowId, path, body);
+  }
+
+  @Post('webhook/:workflowId/:path')
+  async webhookTriggerPost(@Param('workflowId') workflowId: string, @Param('path') path: string, @Body() body: any) {
+    return this.processWebhook(workflowId, path, body);
+  }
+
+  private async processWebhook(workflowId: string, path: string, body: any) {
     try {
       const workflow = await this.prisma.workflow.findUnique({
         where: { id: workflowId },

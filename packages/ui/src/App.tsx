@@ -473,12 +473,12 @@ function ConfigPanel({
                 {outputData ? (
                   <>
                     <div className="flex items-center gap-4 text-[10px] uppercase font-bold text-[#00ffcc] tracking-widest border border-[#333] p-2 bg-[#161616]">
-                      <span>Items: {Array.isArray(outputData.json) ? outputData.json.length : 1}</span>
+                      <span>Items: {Array.isArray(outputData) ? outputData.length : 1}</span>
                       <span className="w-px h-3 bg-[#333]"></span>
                       <span>JSON Mode</span>
                     </div>
                     <div className="flex-1 bg-[#161616] border-2 border-[#333] p-4 overflow-auto text-xs text-[#e5e5e5] font-mono whitespace-pre-wrap selection:bg-[#00ffcc] selection:text-[#161616]">
-                      {JSON.stringify(outputData.json, null, 2)}
+                      {JSON.stringify(Array.isArray(outputData) ? outputData.map((d: any) => d.json) : outputData.json, null, 2)}
                     </div>
                   </>
                 ) : (
