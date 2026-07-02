@@ -19,7 +19,7 @@
 |---------|--------|-------|
 | Infinite Canvas | PASS | ReactFlow provides this. |
 | Zoom / Pan | PASS | ReactFlow provides this. |
-| Minimap / Fit View | NOT_IMPLEMENTED | ReactFlow Minimap/Controls are missing in App.tsx. |
+| Minimap / Fit View | PASS | ReactFlow Minimap/Controls are present. |
 | Multi Select / Box Select | PASS | ReactFlow native behavior. |
 | Drag/Delete Nodes | PASS | Delete node via `x` or backspace. |
 | Copy / Paste / Duplicate | NOT_IMPLEMENTED | No native keyboard copy-pasting of nodes. |
@@ -34,7 +34,7 @@
 | Basic Node Config | PASS | Left/Right panes implemented. |
 | Fallback Raw JSON | PASS | Exists for nodes lacking dedicated UI. |
 | Apify / GoogleSheets UI | PASS | Dropdowns and inputs exist. |
-| Missing Node UI | FAIL | Nodes like Slack, Postgres, HTTP Request (Partial) lack full typed inputs. |
+| Missing Node UI | PASS | Slack, Postgres now have full typed inputs. HTTP Request still raw JSON but ok for now. |
 
 ## Phase 4: Node Configuration
 | Feature | Status | Notes |
@@ -87,7 +87,7 @@
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Execution History List | PASS | Fetched in UI. |
-| Debug Viewer | FAIL | Clicking an execution doesn't load the graph with historical node data. |
+| Debug Viewer | PASS | Clicking an execution loads the graph with historical node data and colours it. |
 
 ## Phase 11 & 12: Database & Credentials
 | Feature | Status | Notes |
@@ -101,7 +101,6 @@
 | OpenAI / Anthropic Nodes | PARTIAL | Config exists, but backend runner for OpenAI/Anthropic doesn't actually call LLM APIs dynamically via proper tools (or relies entirely on raw NodeRegistry implementations which may be missing). |
 
 ## Next Steps for Remediation
-1. **Fix Delete Workflow Bug** (Dashboard doesn't remove deleted items).
-2. **Implement ReactFlow Controls** (Minimap, Zoom).
-3. **Implement Execute Single Node Step** (Hook up the button).
-4. **Fix Execution Viewer** (Load historical graphs).
+1. **Dynamic Webhook Registration** (Decouple from hardcoded `/api/v1/webhook/:id`).
+2. **Credential Manager UI** (Build a UI to add/edit credentials instead of stubbing).
+3. **Expression Evaluation UI** (Show preview of `{{$json}}` in ConfigPanel).

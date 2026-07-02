@@ -78,6 +78,9 @@ export default function CredentialsManager() {
                 <option value="Anthropic">Anthropic API</option>
                 <option value="OpenAI">OpenAI API</option>
                 <option value="Apify">Apify Token</option>
+                <option value="Slack">Slack OAuth/Bot Token</option>
+                <option value="Postgres">PostgreSQL Connection String</option>
+                <option value="GoogleSheets">Google Service Account JSON</option>
                 <option value="Generic">Generic API Key</option>
               </select>
             </div>
@@ -123,7 +126,7 @@ export default function CredentialsManager() {
             </button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 border-2 border-[#333] bg-[#111] flex items-center justify-center font-bold text-lg">
-                {cred.type === 'Anthropic' ? '🤖' : cred.type === 'OpenAI' ? '🧠' : cred.type === 'Apify' ? '🕷️' : '🔑'}
+                {cred.type === 'Anthropic' ? '🤖' : cred.type === 'OpenAI' ? '🧠' : cred.type === 'Apify' ? '🕷️' : cred.type === 'Slack' ? '💬' : cred.type === 'Postgres' ? '🐘' : cred.type === 'GoogleSheets' ? '📊' : '🔑'}
               </div>
               <div>
                 <h3 className="font-bold text-lg text-[#e5e5e5]">{cred.name}</h3>
