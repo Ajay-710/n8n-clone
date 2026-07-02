@@ -3,6 +3,7 @@ import { Job } from 'bullmq';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkflowRunner } from './workflow-runner';
 import { PrismaService } from '../prisma.service';
+import { CredentialsController } from '../credentials.controller';
 
 @Processor('workflow-executions')
 export class ExecutionProcessor extends WorkerHost {
@@ -28,10 +29,29 @@ export class ExecutionProcessor extends WorkerHost {
         });
       }
 
+      // Load credentials
+      const credentialsMap: Record<string, any> = {};
+      if (executionExists) {
+        const workflowVersion = await this.prisma.workflowVersion.findUnique({
+          where: { id: executionExists.workflowVersionId },
+          include: { workflow: true }
+        });
+        if (workflowVersion) {
+          const creds = await this.prisma.credential.findMany({
+            where: { workspaceId: workflowVersion.workflow.workspaceId }
+          });
+          for (const c of creds) {
+            try {
+              credentialsMap[c.id] = JSON.parse(CredentialsController.decrypt(c.encryptedData));
+            } catch (err) {}
+          }
+        }
+      }
+
       // Initialize the engine
       const runner = new WorkflowRunner(nodes, connections, (type, payload) => {
         this.eventEmitter.emit('execution.event', { type, executionId, ...payload });
-      });
+      }, credentialsMap);
       
       // Execute the DAG
       const finalState = await runner.execute(startingNodeId);

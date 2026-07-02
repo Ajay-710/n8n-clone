@@ -17,7 +17,8 @@ export class WorkflowRunner {
   constructor(
     private nodes: WorkflowNode[],
     private connections: WorkflowConnection[],
-    private onEvent?: (type: string, data: any) => void
+    private onEvent?: (type: string, data: any) => void,
+    private credentials: Record<string, any> = {}
   ) {}
 
   /**
@@ -68,6 +69,7 @@ export class WorkflowRunner {
       $workflow: { id: 'current-workflow' }, // Placeholder for real workflow execution context
       $execution: { id: 'current-execution' }, // Placeholder
       $env: process.env,
+      $credentials: this.credentials,
     };
 
     return await NodeRegistry.executeNode(node, context as any);

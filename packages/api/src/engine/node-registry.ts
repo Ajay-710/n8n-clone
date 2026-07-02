@@ -12,6 +12,7 @@ export interface NodeContext {
   $workflow: any;
   $execution: any;
   $env: NodeJS.ProcessEnv;
+  $credentials: Record<string, any>;
 }
 
 export interface INodeDefinition {
@@ -111,9 +112,26 @@ NodeRegistry.registerNode({
       }
     }
 
+    let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    
+    // Inject headers from custom parameters
+    if (node.parameters.headers && typeof node.parameters.headers === 'object') {
+      headers = { ...headers, ...node.parameters.headers };
+    }
+
+    // Inject Auth from Vault
+    const credentialId = node.parameters.credentialId;
+    if (credentialId && context.$credentials[credentialId]) {
+      const cred = context.$credentials[credentialId];
+      if (cred.apiKey) {
+        // Simple Bearer strategy for generic APIs
+        headers['Authorization'] = `Bearer ${cred.apiKey}`;
+      }
+    }
+
     const response = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body
     });
     
@@ -180,10 +198,18 @@ NodeRegistry.registerNode({
   category: 'ai',
   execute: async (node, context) => {
     const { AgentExecutor } = await import('./ai-agent.js');
+    
+    // Resolve credential based on node's selected credential ID
+    const credentialId = node.parameters.credentialId;
+    let apiKey = node.parameters.apiKey || 'mock-key';
+    if (credentialId && context.$credentials[credentialId]) {
+      apiKey = context.$credentials[credentialId].apiKey || apiKey;
+    }
+
     const executor = new AgentExecutor(
       node.parameters.provider || 'openai',
       node.parameters.model || 'gpt-4',
-      node.parameters.apiKey || 'mock-key',
+      apiKey,
       []
     );
     return await executor.execute(node.parameters.prompt || 'Hello', context);

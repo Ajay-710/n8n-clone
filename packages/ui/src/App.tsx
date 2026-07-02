@@ -225,6 +225,7 @@ function ConfigPanel({
   updateNodeData: (id: string, key: string, value: any) => void, 
   deleteNode: (id: string) => void,
   executionData?: Record<string, any>,
+  credentials: any[],
   onClose: () => void
 }) {
   const [leftTab, setLeftTab] = useState<'parameters' | 'settings'>('parameters');
@@ -279,6 +280,17 @@ function ConfigPanel({
               <>
                 {type === 'HTTPRequest' && (
                   <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Credential (Vault)</label>
+                      <select 
+                        value={parameters.credentialId || ''} 
+                        onChange={(e) => updateNodeData(id, 'credentialId', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="">-- No Credential --</option>
+                        {credentials.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                      </select>
+                    </div>
                     <div className="flex flex-col gap-2">
                       <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Method</label>
                       <select 
@@ -366,6 +378,52 @@ function ConfigPanel({
                     />
                     <span className="text-[10px] text-[#00ffcc] mt-1 break-all">URL: /api/v1/webhook/workflow_id/{parameters.path || 'webhook'}</span>
                   </div>
+                )}
+                {type === 'AIAgent' && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Credential (Vault)</label>
+                      <select 
+                        value={parameters.credentialId || ''} 
+                        onChange={(e) => updateNodeData(id, 'credentialId', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="">-- No Credential --</option>
+                        {credentials.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Provider</label>
+                      <select 
+                        value={parameters.provider || 'openai'} 
+                        onChange={(e) => updateNodeData(id, 'provider', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors uppercase"
+                      >
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic (Claude)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Model</label>
+                      <input 
+                        type="text" 
+                        value={parameters.model || ''} 
+                        onChange={(e) => updateNodeData(id, 'model', e.target.value)}
+                        placeholder="e.g. gpt-4 or claude-3-opus-20240229" 
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Prompt Expression</label>
+                      <textarea 
+                        rows={6}
+                        value={parameters.prompt || ''} 
+                        onChange={(e) => updateNodeData(id, 'prompt', e.target.value)}
+                        placeholder="Summarize the previous data: {{$json.body}}"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                      />
+                    </div>
+                  </>
                 )}
               </>
             )}
@@ -507,7 +565,19 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
       
     // Fetch execution history
     fetchExecutions();
+    fetchCredentials();
   }, [workflowId, setNodes, setEdges]);
+
+  const [credentialsList, setCredentialsList] = useState<any[]>([]);
+  const fetchCredentials = () => {
+    fetch('/api/v1/credentials')
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          setCredentialsList(data.data);
+        }
+      });
+  };
 
   const fetchExecutions = () => {
     fetch(`/api/v1/workflows/${workflowId}/executions`)
@@ -935,16 +1005,16 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
           </ReactFlow>
           {!showExecutions && <NodePicker isOpen={isNodePickerOpen} setIsOpen={setIsNodePickerOpen} onDragStart={onDragStart} onAddNode={onAddNode} />}
         </main>
-        
-        
-        <ConfigPanel 
-          selectedNode={selectedNode} 
-          updateNodeData={updateNodeData} 
-          deleteNode={deleteNode} 
-          executionData={showExecutions && selectedExecution ? selectedExecution.executionData : undefined}
-          onClose={() => setSelectedNodeId(null)}
-        />
-      </div>
+            {selectedNodeId && (
+              <ConfigPanel 
+                selectedNode={selectedNode} 
+                updateNodeData={updateNodeData} 
+                deleteNode={deleteNode} 
+                executionData={selectedExecution ? selectedExecution.executionData : executions[0]?.executionData}
+                credentials={credentialsList}
+                onClose={() => setSelectedNodeId(null)}
+              />
+            )}</div>
     </div>
   );
 }
