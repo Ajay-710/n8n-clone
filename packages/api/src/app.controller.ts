@@ -20,7 +20,7 @@ export class AppController {
       
       // Verify Redis/BullMQ
       const redisClient = await this.executionQueue.client;
-      await redisClient.ping();
+      await (redisClient as any).ping();
 
       return { 
         status: 'ok', 

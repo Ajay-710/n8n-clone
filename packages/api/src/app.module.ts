@@ -8,7 +8,7 @@ import { PrismaService } from './prisma.service';
 import { ExecutionProcessor } from './engine/execution.processor';
 import Redis from 'ioredis';
 
-const redisConnection = process.env.REDIS_URL 
+const redisConnection: any = process.env.REDIS_URL 
   ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
   : {
       host: process.env.REDIS_HOST || 'localhost',
