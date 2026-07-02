@@ -8,6 +8,10 @@
   "scripts": {
     "dev:api": "npm run start:dev --workspace=api",
     "dev:ui": "npm run dev --workspace=ui",
-    "dev": "npm run dev:api & npm run dev:ui"
+    "dev": "npm run dev:api & npm run dev:ui",
+    "build:ui": "npm run build --workspace=ui",
+    "build:api": "npm run build --workspace=api",
+    "build": "npm run build:ui && npm run build:api",
+    "start": "npm run start:prod --workspace=api"
   }
 }
