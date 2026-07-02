@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from './prisma.service';
 import * as crypto from 'crypto';
 
 @Controller('api/v1/credentials')
 export class CredentialsController {
-  private prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
+
   private readonly ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '12345678901234567890123456789012'; // 32 bytes
 
   private encrypt(text: string): string {
