@@ -296,11 +296,47 @@ function FlowBuilder() {
     reader.onload = (e) => {
       try {
         const json = JSON.parse(e.target?.result as string);
-        if (json.nodes) setNodes(json.nodes);
-        if (json.edges) setEdges(json.edges);
-        alert('Workflow imported!');
+        
+        let newNodes: Node[] = [];
+        let newEdges: Edge[] = [];
+
+        if (json.nodes && Array.isArray(json.nodes)) {
+          newNodes = json.nodes.map((n: any) => {
+            // Check if it's an n8n format node
+            if (Array.isArray(n.position)) {
+              return {
+                id: n.id || getId(),
+                type: 'default',
+                position: { x: n.position[0], y: n.position[1] },
+                data: {
+                  label: n.name || n.type || 'Node',
+                  type: n.type?.split('.').pop() || 'Unknown',
+                  parameters: n.parameters || {}
+                }
+              };
+            }
+            // Ensure n7n nodes have the correct ReactFlow visual type and data wrapper
+            return {
+              ...n,
+              type: 'default', 
+              data: n.data || { label: 'Node', type: n.type, parameters: n.parameters || {} }
+            };
+          });
+        }
+
+        if (json.edges && Array.isArray(json.edges)) {
+          newEdges = json.edges;
+        } else if (json.connections) {
+          // Attempt to parse n8n connections format if possible
+          // For now, basic fallback to empty edges if no edges array
+          newEdges = [];
+        }
+
+        setNodes(newNodes);
+        setEdges(newEdges);
+        alert('Workflow imported successfully!');
       } catch (err) {
-        alert('Invalid JSON file');
+        alert('Invalid JSON file format');
       }
     };
     reader.readAsText(file);
