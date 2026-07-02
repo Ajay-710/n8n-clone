@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { AppService } from './app.service';
@@ -118,7 +118,7 @@ export class AppController {
     const { startingNodeId, mode = 'manual', nodes, connections } = body;
 
     // Create execution record
-    let versionId = null;
+    let versionId: string | null = null;
     try {
       const workflow = await this.prisma.workflow.findUnique({
         where: { id: workflowId },

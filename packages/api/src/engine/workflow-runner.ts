@@ -72,7 +72,7 @@ export class WorkflowRunner {
       case 'HTTPRequest':
         console.log(`[Engine] Executing real HTTP Request to ${resolvedParams.url}`);
         const method = resolvedParams.method || 'GET';
-        let body = undefined;
+        let body: string | undefined = undefined;
         
         if (['POST', 'PUT', 'PATCH'].includes(method) && resolvedParams.body) {
           try {
