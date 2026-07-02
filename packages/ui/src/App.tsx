@@ -202,9 +202,28 @@ function Dashboard({ onOpenWorkflow }: { onOpenWorkflow: (id: string) => void })
               <div className={`w-3 h-3 rounded-full ${wf.active !== false ? 'bg-[#00ffcc]' : 'bg-[#666]'}`}></div>
             </div>
             <div className="text-[#999] text-xs">ID: {wf.id}</div>
-            <button className="mt-4 px-3 py-1.5 border border-[#666] text-[#e5e5e5] text-xs font-bold uppercase tracking-widest hover:bg-[#333]">
-              Open Editor
-            </button>
+            <div className="flex justify-between mt-4">
+              <button 
+                onClick={(e) => { e.stopPropagation(); onOpenWorkflow(wf.id); }}
+                className="flex-1 mr-2 px-3 py-1.5 border border-[#666] text-[#e5e5e5] text-xs font-bold uppercase tracking-widest hover:bg-[#333]"
+              >
+                Open
+              </button>
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!window.confirm('Delete this workflow?')) return;
+                  await fetch(`/api/v1/workflows/${wf.id}`, { method: 'DELETE' });
+                  // Re-fetch
+                  fetch('/api/v1/workflows').then(res => res.json()).then(data => {
+                    if (data.status === 'success') setWorkflows(data.data);
+                  });
+                }}
+                className="px-3 py-1.5 border border-[#ff4444] text-[#ff4444] text-xs font-bold uppercase tracking-widest hover:bg-[#ff4444] hover:text-[#161616] transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
         {workflows.length === 0 && (

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { AppService } from './app.service';
@@ -116,6 +116,16 @@ export class AppController {
       });
       
       return { status: 'success', data: newVersion };
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
+  }
+
+  @Delete('workflows/:id')
+  async deleteWorkflow(@Param('id') workflowId: string) {
+    try {
+      await this.prisma.workflow.delete({ where: { id: workflowId } });
+      return { status: 'success' };
     } catch (e: any) {
       return { status: 'error', message: e.message };
     }
