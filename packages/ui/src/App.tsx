@@ -755,10 +755,15 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
     fetch(`/api/v1/workflows/${workflowId}`)
       .then(res => res.json())
       .then(data => {
-        if (data.status === 'success' && data.data && data.data.WorkflowVersion?.[0]) {
-          const version = data.data.WorkflowVersion[0];
-          if (version.nodes) setNodes(version.nodes);
-          if (version.connections) setEdges(version.connections);
+        if (data.status === 'success' && data.data) {
+          if (data.data.name) {
+            setWorkflowName(data.data.name);
+          }
+          if (data.data.WorkflowVersion?.[0]) {
+            const version = data.data.WorkflowVersion[0];
+            if (version.nodes) setNodes(version.nodes);
+            if (version.connections) setEdges(version.connections);
+          }
         }
       })
       .catch(err => console.error("Could not load workflow", err));
