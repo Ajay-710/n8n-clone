@@ -515,6 +515,7 @@ function ConfigPanel({
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 }
