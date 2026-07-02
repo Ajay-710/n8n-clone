@@ -286,14 +286,16 @@ function ConfigPanel({
   deleteNode,
   executionData,
   credentials,
-  onClose
+  onClose,
+  onExecuteNode
 }: { 
   selectedNode: Node | null, 
   updateNodeData: (id: string, key: string, value: any) => void, 
   deleteNode: (id: string) => void,
   executionData?: Record<string, any>,
   credentials: any[],
-  onClose: () => void
+  onClose: () => void,
+  onExecuteNode: (id: string) => void
 }) {
   const [middleTab, setMiddleTab] = useState<'parameters' | 'settings'>('parameters');
 
@@ -678,7 +680,12 @@ function ConfigPanel({
               ) : (
                  <div className="text-center mt-20 text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8">
                    No output data.<br/><br/>
-                   <button className="px-4 py-2 mt-4 bg-[#ff6600] text-[#161616] font-bold border-2 border-[#ff6600] hover:bg-transparent hover:text-[#ff6600] transition-colors rounded-sm">Execute node</button>
+                   <button 
+                     onClick={() => onExecuteNode(id)}
+                     className="px-4 py-2 mt-4 bg-[#ff6600] text-[#161616] font-bold border-2 border-[#ff6600] hover:bg-transparent hover:text-[#ff6600] transition-colors rounded-sm cursor-pointer"
+                   >
+                     Execute node
+                   </button>
                  </div>
               )}
             </div>
@@ -907,6 +914,48 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
     setSelectedNodeId(null);
   }, [setNodes, setEdges]);
 
+  const runExecution = async (specificNodeId?: string) => {
+    try {
+      setNodes(nds => nds.map(n => ({ ...n, className: '' })));
+      
+      const engineNodes = nodes.map(n => ({
+        id: n.id,
+        type: n.data.type || n.data.label.replace(/\s+/g, ''),
+        parameters: n.data.parameters || {}
+      }));
+      const engineConnections = edges.map(e => ({
+        source: e.source,
+        target: e.target
+      }));
+
+      let startId = specificNodeId;
+      if (!startId) {
+        const triggerNode = engineNodes.find(n => n.type === 'Webhook');
+        startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
+      }
+
+      if (!startId) return;
+
+      setExecutionMode('running');
+      const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          startingNodeId: startId, 
+          mode: 'manual',
+          nodes: engineNodes,
+          connections: engineConnections
+        })
+      });
+      const data = await res.json();
+      if (data.status !== 'success' && data.status !== 'queued') {
+        setExecutionMode('idle');
+      }
+    } catch (e: any) {
+      setExecutionMode('idle');
+    }
+  };
+
   const saveWorkflow = async () => {
     try {
       await fetch(`/api/v1/workflows/${workflowId}`, {
@@ -1099,44 +1148,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
             ) : (
               <>
                 <button 
-                  onClick={async () => {
-                    try {
-                      setNodes(nds => nds.map(n => ({ ...n, className: '' })));
-                      
-                      const engineNodes = nodes.map(n => ({
-                        id: n.id,
-                        type: n.data.type || n.data.label.replace(/\s+/g, ''),
-                        parameters: n.data.parameters || {}
-                      }));
-                      const engineConnections = edges.map(e => ({
-                        source: e.source,
-                        target: e.target
-                      }));
-
-                      const triggerNode = engineNodes.find(n => n.type === 'Webhook');
-                      const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
-
-                      if (!startId) return;
-
-                      setExecutionMode('running');
-                      const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          startingNodeId: startId, 
-                          mode: 'manual',
-                          nodes: engineNodes,
-                          connections: engineConnections
-                        })
-                      });
-                      const data = await res.json();
-                      if (data.status !== 'success') {
-                        setExecutionMode('idle');
-                      }
-                    } catch (e: any) {
-                      setExecutionMode('idle');
-                    }
-                  }}
+                  onClick={() => runExecution()}
                   className="px-4 py-1.5 border-2 border-r-0 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#00ffcc] transition-all uppercase cursor-pointer"
                 >
                   EXECUTE
@@ -1263,6 +1275,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
                 executionData={selectedExecution ? selectedExecution.executionData : executions[0]?.executionData}
                 credentials={credentialsList}
                 onClose={() => setSelectedNodeId(null)}
+                onExecuteNode={runExecution}
               />
             )}</div>
     </div>
