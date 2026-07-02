@@ -27,20 +27,26 @@ function App() {
   );
 
   return (
-    <div className="w-screen h-screen flex flex-col dark text-foreground">
-      <header className="h-16 border-b border-[#22d3ee]/20 flex items-center px-6 bg-[#120d20]/80 backdrop-blur-md z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#c026d3] to-[#22d3ee] flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.5)]">
-            <span className="text-white font-bold text-lg">Z</span>
+    <div className="w-screen h-screen flex flex-col text-[#e5e5e5] font-mono">
+      <header className="h-16 border-b-2 border-[#333] flex items-center px-6 bg-[#161616] z-10">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 border-2 border-[#e5e5e5] bg-[#161616] flex items-center justify-center">
+            <span className="text-[#e5e5e5] font-bold text-xl uppercase">Z</span>
           </div>
-          <h1 className="font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-[#22d3ee]">ZAGGONAUT ORCHESTRATOR</h1>
+          <h1 className="font-bold text-xl tracking-widest text-[#e5e5e5]">Zaggonaut</h1>
         </div>
         
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-8">
+          <nav className="flex gap-4 text-sm font-bold tracking-widest lowercase">
+            <a href="#" className="hover:underline underline-offset-4 decoration-2">home</a>
+            <a href="#" className="hover:underline underline-offset-4 decoration-2">projects</a>
+            <a href="#" className="hover:underline underline-offset-4 decoration-2">blog</a>
+          </nav>
+
           <button 
             onClick={async () => {
               try {
-                const res = await fetch('http://localhost:3000/api/v1/workflows/test-wf-id/execute', {
+                const res = await fetch('/api/v1/workflows/test-wf-id/execute', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ startingNodeId: '1', mode: 'manual' })
@@ -51,13 +57,13 @@ function App() {
                 alert(`Execution failed: ${e.message}`);
               }
             }}
-            className="px-4 py-2 rounded-md bg-[#22d3ee] text-[#09090b] font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:shadow-[0_0_25px_rgba(34,211,238,0.8)] transition-all"
+            className="px-4 py-1.5 border-2 border-[#e5e5e5] bg-[#e5e5e5] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#e5e5e5] transition-all uppercase"
           >
-            EXECUTE WORKFLOW
+            EXECUTE
           </button>
         </div>
       </header>
-      <main className="flex-1 relative bg-transparent">
+      <main className="flex-1 relative bg-[#161616]">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -67,13 +73,13 @@ function App() {
           fitView
           className="zaggonaut-flow"
         >
-          <Controls className="!bg-[#120d20] !border-[#22d3ee]/30 !fill-[#22d3ee]" />
+          <Controls className="!bg-[#161616] !border-[#e5e5e5] !fill-[#e5e5e5]" />
           <MiniMap 
-            nodeColor="#c026d3" 
-            maskColor="rgba(18, 13, 32, 0.8)" 
-            className="!bg-[#09090b] !border-[#22d3ee]/30" 
+            nodeColor="#333" 
+            maskColor="rgba(22, 22, 22, 0.8)" 
+            className="!bg-[#161616] !border-2 !border-[#333]" 
           />
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color="rgba(34,211,238,0.15)" />
+          <Background variant={BackgroundVariant.Dots} gap={20} size={2} color="#333333" />
         </ReactFlow>
       </main>
     </div>
