@@ -8,11 +8,8 @@ import ReactFlow, {
   addEdge,
   BackgroundVariant,
   ReactFlowProvider,
-  ReactFlowInstance,
-  Connection,
-  Edge,
-  Node
 } from 'reactflow';
+import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 const initialNodes: Node[] = [];
