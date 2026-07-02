@@ -36,22 +36,22 @@
 }
 
 .react-flow__controls {
-  @apply bg-[#161616] border-2 border-[#333] rounded-none shadow-none flex flex-col overflow-hidden !important;
+  @apply !bg-[#161616] !border-2 !border-[#333] !rounded-none !shadow-none !flex !flex-col !overflow-hidden;
   box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5) !important;
 }
 
 .react-flow__controls-button {
-  @apply bg-[#161616] border-b-2 border-[#333] hover:bg-[#222] transition-colors flex items-center justify-center p-1.5 rounded-none !important;
+  @apply !bg-[#161616] !border-b-2 !border-[#333] hover:!bg-[#222] !transition-colors !flex !items-center !justify-center !p-1.5 !rounded-none;
 }
 
 .react-flow__controls-button:last-child {
-  @apply border-b-0 !important;
+  @apply !border-b-0;
 }
 
 .react-flow__controls-button svg {
-  @apply fill-[#999] transition-colors !important;
+  @apply !fill-[#999] !transition-colors;
 }
 
 .react-flow__controls-button:hover svg {
-  @apply fill-[#00ffcc] !important;
+  @apply !fill-[#00ffcc];
 }
