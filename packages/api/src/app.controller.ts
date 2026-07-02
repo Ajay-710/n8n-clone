@@ -220,7 +220,7 @@ export class AppController {
     };
   }
 
-  @All('webhook/:path(*)')
+  @All('webhook/*path')
   async handleDynamicWebhook(@Param('path') path: string, @Req() req: any, @Body() body: any) {
     try {
       const workflows = await this.prisma.workflow.findMany({
