@@ -20,16 +20,36 @@ const getId = () => `node_${id++}`;
 
 const WORKFLOW_ID = 'default-workflow';
 
-function Sidebar() {
+function Sidebar({ isOpen = true, onToggle }: { isOpen?: boolean, onToggle?: () => void }) {
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/label', label);
     event.dataTransfer.effectAllowed = 'move';
   };
+  if (!isOpen) {
+    return (
+      <button 
+        onClick={onToggle}
+        className="absolute top-4 left-4 z-50 p-2 px-3 bg-[#161616] border-2 border-[#e5e5e5] text-[#e5e5e5] hover:bg-[#e5e5e5] hover:text-[#161616] transition-all cursor-pointer font-bold text-xs tracking-widest"
+        title="Open Nodes Panel"
+      >
+        &gt;&gt;
+      </button>
+    );
+  }
 
   return (
-    <aside className="w-64 border-r-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto">
-      <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Nodes</h2>
+    <aside className="w-64 border-r-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative shrink-0">
+      <div className="flex justify-between items-center mb-4 border-b-2 border-[#333] pb-2">
+        <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase">Nodes</h2>
+        <button 
+          onClick={onToggle}
+          className="text-[#999] hover:text-[#e5e5e5] font-bold text-sm tracking-widest transition-colors cursor-pointer"
+          title="Close Nodes Panel"
+        >
+          &lt;&lt;
+        </button>
+      </div>
       
       <div className="text-[#e5e5e5] text-xs mb-2">Drag nodes to canvas:</div>
       
@@ -204,6 +224,9 @@ function FlowBuilder() {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   
+  // UI State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   // Execution Viewer State
   const [showExecutions, setShowExecutions] = useState(false);
   const [executions, setExecutions] = useState<any[]>([]);
@@ -370,9 +393,29 @@ function FlowBuilder() {
         if (json.edges && Array.isArray(json.edges)) {
           newEdges = json.edges;
         } else if (json.connections) {
-          // Attempt to parse n8n connections format if possible
-          // For now, basic fallback to empty edges if no edges array
-          newEdges = [];
+          // Parse n8n connections format
+          Object.keys(json.connections).forEach(sourceName => {
+            const outputs = json.connections[sourceName];
+            Object.keys(outputs).forEach(outputType => {
+              outputs[outputType].forEach((connectionsList: any[]) => {
+                connectionsList.forEach(conn => {
+                  const targetName = conn.node;
+                  // Look up ReactFlow node IDs by name
+                  const sourceNode = newNodes.find(n => n.data.label === sourceName);
+                  const targetNode = newNodes.find(n => n.data.label === targetName);
+                  if (sourceNode && targetNode) {
+                    newEdges.push({
+                      id: `e-${sourceNode.id}-${targetNode.id}`,
+                      source: sourceNode.id,
+                      target: targetNode.id,
+                      sourceHandle: null,
+                      targetHandle: null
+                    });
+                  }
+                });
+              });
+            });
+          });
         }
 
         setNodes(newNodes);
@@ -518,7 +561,7 @@ function FlowBuilder() {
             </div>
           </aside>
         ) : (
-          <Sidebar />
+          <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
         )}
         
         <main className="flex-1 h-full relative" ref={reactFlowWrapper}>
@@ -540,6 +583,8 @@ function FlowBuilder() {
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             fitView
+            minZoom={0.05}
+            maxZoom={4}
             className="n7n-flow"
           >
             <Controls className="!bg-[#161616] !border-[#e5e5e5] !fill-[#e5e5e5]" />
