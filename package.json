@@ -1,0 +1,13 @@
+{
+  "name": "enterprise-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace=api",
+    "dev:ui": "npm run dev --workspace=ui",
+    "dev": "npm run dev:api & npm run dev:ui"
+  }
+}

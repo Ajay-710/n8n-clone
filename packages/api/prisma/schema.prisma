@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  role         String         @default("user")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Organization Organization[]
+}
+
+model Organization {
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  settings  Json?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id])
+  Workspace Workspace[]
+}
+
+model Workspace {
+  id             String         @id @default(uuid())
+  organizationId String
+  name           String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  Workflow       Workflow[]
+  Credential     Credential[]
+}
+
+model Workflow {
+  id              String            @id @default(uuid())
+  workspaceId     String
+  name            String
+  active          Boolean           @default(false)
+  tags            Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id])
+  WorkflowVersion WorkflowVersion[]
+}
+
+model WorkflowVersion {
+  id          String      @id @default(uuid())
+  workflowId  String
+  version     Int
+  nodes       Json
+  connections Json
+  settings    Json?
+  createdAt   DateTime    @default(now())
+  workflow    Workflow    @relation(fields: [workflowId], references: [id])
+  Execution   Execution[]
+}
+
+model Execution {
+  id                String          @id @default(uuid())
+  workflowVersionId String
+  status            String          @default("queued") // queued, running, success, failed
+  mode              String          @default("manual") // manual, webhook, trigger
+  executionData     Json?
+  startedAt         DateTime?
+  stoppedAt         DateTime?
+  workflowVersion   WorkflowVersion @relation(fields: [workflowVersionId], references: [id])
+}
+
+model Credential {
+  id            String    @id @default(uuid())
+  workspaceId   String
+  type          String
+  name          String
+  encryptedData String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+}
