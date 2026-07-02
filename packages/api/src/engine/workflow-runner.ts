@@ -72,7 +72,18 @@ export class WorkflowRunner {
           // Merge arrays of items from all incoming connections
           for (const conn of incomingConns) {
             if (this.executionData[conn.source]) {
-              inputData = inputData.concat(this.executionData[conn.source]);
+              let sourceData = this.executionData[conn.source];
+              
+              // Filter data if it's coming from an IF or Switch node's branch
+              if (conn.sourceHandle) {
+                sourceData = sourceData.filter(item => 
+                  (conn.sourceHandle === 'true' && item.json.matched === true) ||
+                  (conn.sourceHandle === 'false' && item.json.matched === false) ||
+                  (item.json.branch === conn.sourceHandle)
+                );
+              }
+              
+              inputData = inputData.concat(sourceData);
             }
           }
         }
@@ -88,8 +99,22 @@ export class WorkflowRunner {
 
         // Add downstream nodes to queue
         const nextConns = this.connections.filter(c => c.source === node.id);
+        
         for (const conn of nextConns) {
-          if (!queue.includes(conn.target) && nodeStatus[conn.target] === 'pending') {
+          // If this is an edge from an IF or Switch node, we need to filter the output data being passed
+          let passData = true;
+          if (conn.sourceHandle) {
+             const hasDataForHandle = result.some(item => 
+               (conn.sourceHandle === 'true' && item.json.matched === true) ||
+               (conn.sourceHandle === 'false' && item.json.matched === false) ||
+               (item.json.branch === conn.sourceHandle) // for Switch nodes
+             );
+             if (!hasDataForHandle) {
+               passData = false; // Do not trigger downstream node if no items matched this branch
+             }
+          }
+
+          if (passData && !queue.includes(conn.target) && nodeStatus[conn.target] === 'pending') {
             queue.push(conn.target);
           }
         }

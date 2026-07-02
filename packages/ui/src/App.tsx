@@ -89,12 +89,45 @@ function Sidebar({ isOpen = true, onToggle, currentView, setView }: { isOpen?: b
 }
 
 const NODE_CATALOG = [
+  // Triggers
   { type: 'Webhook', label: 'Webhook', category: 'Triggers', description: 'Starts workflow on HTTP request', icon: '⚡' },
   { type: 'ManualTrigger', label: 'Manual Trigger', category: 'Triggers', description: 'Starts workflow when clicking Execute', icon: '▶️' },
+  { type: 'Schedule', label: 'Schedule Trigger', category: 'Triggers', description: 'Run workflow on a Cron schedule', icon: '⏱️' },
+  { type: 'KafkaTrigger', label: 'Kafka Trigger', category: 'Triggers', description: 'Trigger on new Kafka message', icon: '📨' },
+  
+  // Core Actions
   { type: 'HTTPRequest', label: 'HTTP Request', category: 'Actions', description: 'Make an HTTP request', icon: '🌐' },
-  { type: 'AIAgent', label: 'AI Agent', category: 'AI', description: 'Run an AI prompt', icon: '🧠' },
-  { type: 'Set', label: 'Set Data', category: 'Data', description: 'Set specific values', icon: '🔧' },
+  { type: 'Code', label: 'Code', category: 'Actions', description: 'Write custom JavaScript/Python', icon: '💻' },
+  { type: 'ExecuteWorkflow', label: 'Execute Workflow', category: 'Actions', description: 'Run a sub-workflow', icon: '🔄' },
+  { type: 'Apify', label: 'Apify', category: 'Actions', description: 'Run Apify Actors', icon: '🐝' },
+  
+  // Logic & Data Processing
+  { type: 'Set', label: 'Set Data', category: 'Logic', description: 'Set specific values', icon: '🔧' },
   { type: 'IF', label: 'IF Condition', category: 'Logic', description: 'Branch based on condition', icon: '🔀' },
+  { type: 'Switch', label: 'Switch', category: 'Logic', description: 'Route data based on multiple rules', icon: '🛤️' },
+  { type: 'Merge', label: 'Merge', category: 'Logic', description: 'Combine multiple execution streams', icon: '🔀' },
+  { type: 'ItemLists', label: 'Item Lists', category: 'Logic', description: 'Split or merge item arrays', icon: '📋' },
+  
+  // AI & Advanced
+  { type: 'AIAgent', label: 'AI Agent', category: 'AI', description: 'Run an advanced AI agent', icon: '🧠' },
+  { type: 'OpenAI', label: 'OpenAI', category: 'AI', description: 'Connect to ChatGPT/GPT-4', icon: '🤖' },
+  { type: 'Anthropic', label: 'Anthropic', category: 'AI', description: 'Connect to Claude models', icon: '🎭' },
+  
+  // App Integrations
+  { type: 'GoogleSheets', label: 'Google Sheets', category: 'Integrations', description: 'Read/Write to spreadsheets', icon: '📊' },
+  { type: 'Gmail', label: 'Gmail', category: 'Integrations', description: 'Send and receive emails', icon: '📧' },
+  { type: 'Postgres', label: 'PostgreSQL', category: 'Integrations', description: 'Run database queries', icon: '🐘' },
+  { type: 'Slack', label: 'Slack', category: 'Integrations', description: 'Send messages to channels', icon: '💬' },
+  { type: 'Stripe', label: 'Stripe', category: 'Integrations', description: 'Process payments & customers', icon: '💳' },
+  { type: 'Telegram', label: 'Telegram', category: 'Integrations', description: 'Send bot messages', icon: '📱' },
+  { type: 'Trello', label: 'Trello', category: 'Integrations', description: 'Manage boards and cards', icon: '📋' },
+  { type: 'Twilio', label: 'Twilio', category: 'Integrations', description: 'Send SMS and calls', icon: '📱' },
+  { type: 'GitHub', label: 'GitHub', category: 'Integrations', description: 'Manage repositories & issues', icon: '🐙' },
+  { type: 'AWSS3', label: 'AWS S3', category: 'Integrations', description: 'Read/Write cloud storage objects', icon: '☁️' },
+  
+  // Utilities
+  { type: 'EditImage', label: 'Edit Image', category: 'Utilities', description: 'Resize, crop, or process images', icon: '🖼️' },
+  { type: 'Crypto', label: 'Crypto', category: 'Utilities', description: 'Encrypt and hash data', icon: '🔐' },
   { type: 'StickyNode', label: 'Sticky Note', category: 'Notes', description: 'Add a text note to the canvas', icon: '📝' },
 ];
 
