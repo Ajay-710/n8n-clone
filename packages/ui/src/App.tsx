@@ -431,7 +431,7 @@ function ConfigPanel({
                   </>
                 )}
 
-                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent'].includes(type) && type !== 'StickyNode' && (
+                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent'].includes(type || '') && type !== 'StickyNode' && (
                   <div className="flex flex-col gap-2 h-full">
                     <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Raw Parameters (JSON)</label>
                     <textarea 
