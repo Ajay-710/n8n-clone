@@ -45,7 +45,7 @@
 | Output Tab | PASS | Shows node execution output. |
 | Retry Options | NOT_IMPLEMENTED | Not in Settings. |
 | Always Output Data | NOT_IMPLEMENTED | Not in Settings. |
-| Expressions | FAIL | Raw JSON editor doesn't auto-evaluate expressions in realtime UI. |
+| Expressions | PASS | `ConfigPanel` now uses `evaluateExpression` to show a live preview of evaluated output using upstream `executionData`. |
 
 ## Phase 5: Execution Engine
 | Feature | Status | Notes |

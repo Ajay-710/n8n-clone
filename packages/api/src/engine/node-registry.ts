@@ -198,7 +198,7 @@ NodeRegistry.registerNode({
   category: 'ai',
   execute: async (node, inputData, context) => {
     const { AgentExecutor } = await import('./ai-agent.js');
-    const outputData: INodeExecutionData[] = [];
+    const outputData: import('./workflow-runner.js').INodeExecutionData[] = [];
     
     for (let i = 0; i < inputData.length; i++) {
       const params = NodeRegistry.resolveItemParameters(node, i, inputData, context);
@@ -222,4 +222,44 @@ NodeRegistry.registerNode({
     
     return outputData;
   }
+});
+
+const executeSimpleLLM = async (provider: string, node: any, inputData: any[], context: any) => {
+  const { AgentExecutor } = await import('./ai-agent.js');
+  const outputData: import('./workflow-runner.js').INodeExecutionData[] = [];
+  
+  for (let i = 0; i < (inputData.length || 1); i++) {
+    const params = NodeRegistry.resolveItemParameters(node, i, inputData, context);
+    
+    const credentialId = params.credentialId;
+    let apiKey = params.apiKey || 'mock-key';
+    if (credentialId && context.$credentials[credentialId]) {
+      // Handle the nested structure of credential data
+      apiKey = context.$credentials[credentialId].data?.apiKey || apiKey;
+    }
+
+    const executor = new AgentExecutor(
+      provider,
+      params.model || (provider === 'openai' ? 'gpt-4' : 'claude-3-opus-20240229'),
+      apiKey,
+      []
+    );
+    
+    const prompt = params.prompt || 'Say hello!';
+    const res = await executor.execute(prompt, { ...context, $json: inputData[i]?.json });
+    outputData.push({ json: res });
+  }
+  return outputData;
+};
+
+NodeRegistry.registerNode({
+  type: 'Anthropic',
+  category: 'ai',
+  execute: async (node, inputData, context) => executeSimpleLLM('anthropic', node, inputData, context)
+});
+
+NodeRegistry.registerNode({
+  type: 'OpenAI',
+  category: 'ai',
+  execute: async (node, inputData, context) => executeSimpleLLM('openai', node, inputData, context)
 });
