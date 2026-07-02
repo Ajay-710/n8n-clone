@@ -3,9 +3,9 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
-  EdgeProps,
   useReactFlow
 } from 'reactflow';
+import type { EdgeProps } from 'reactflow';
 
 export default function CustomEdge({
   id,
