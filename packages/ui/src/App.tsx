@@ -498,7 +498,7 @@ function ConfigPanel({
                         rows={6}
                         value={parameters.prompt || ''} 
                         onChange={(e) => updateNodeData(id, 'prompt', e.target.value)}
-                        placeholder="System: You are an expert... \n\nUser: {{$json.body}}"
+                        placeholder={'System: You are an expert... \\n\\nUser: {{$json.body}}'}
                         className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                       />
                     </div>
@@ -547,7 +547,7 @@ function ConfigPanel({
                         rows={6}
                         value={parameters.inputJson || ''} 
                         onChange={(e) => updateNodeData(id, 'inputJson', e.target.value)}
-                        placeholder="{\n  \"urls\": [\"{{ $json.url }}\"]\n}"
+                        placeholder={'{\n  "urls": ["{{ $json.url }}"]\n}'}
                         className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                       />
                     </div>
