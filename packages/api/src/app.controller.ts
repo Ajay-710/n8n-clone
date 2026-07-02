@@ -99,8 +99,15 @@ export class AppController {
   @Put('workflows/:id')
   async updateWorkflow(@Param('id') workflowId: string, @Body() body: any) {
     try {
-      const { nodes, connections } = body;
+      const { name, nodes, connections } = body;
       
+      if (name) {
+        await this.prisma.workflow.update({
+          where: { id: workflowId },
+          data: { name }
+        });
+      }
+
       const latestVersion = await this.prisma.workflowVersion.findFirst({
         where: { workflowId },
         orderBy: { version: 'desc' }

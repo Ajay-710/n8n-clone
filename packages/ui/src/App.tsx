@@ -901,7 +901,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
       await fetch(`/api/v1/workflows/${workflowId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes, connections: edges })
+        body: JSON.stringify({ name: workflowName, nodes, connections: edges })
       });
       alert('Workflow saved!');
     } catch (e: any) {
