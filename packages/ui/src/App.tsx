@@ -7,14 +7,6 @@ import ReactFlow, {
   useEdgesState,
   addEdge,
   BackgroundVariant,
-import ReactFlow, {
-  MiniMap,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  BackgroundVariant,
   ReactFlowProvider,
 } from 'reactflow';
 import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
