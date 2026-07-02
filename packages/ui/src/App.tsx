@@ -11,6 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
 import CustomNode from './components/CustomNode';
+import CredentialsManager from './components/CredentialsManager';
 import 'reactflow/dist/style.css';
 
 const nodeTypes = {
@@ -62,6 +63,12 @@ function Sidebar({ isOpen = true, onToggle, currentView, setView }: { isOpen?: b
           className={`p-3 text-sm font-bold tracking-widest uppercase text-left transition-all ${currentView === 'dashboard' ? 'bg-[#e5e5e5] text-[#161616]' : 'text-[#999] hover:bg-[#333] hover:text-[#e5e5e5]'}`}
         >
           Workflows
+        </button>
+        <button 
+          onClick={() => setView('credentials')}
+          className={`p-3 text-sm font-bold tracking-widest uppercase text-left transition-all ${currentView === 'credentials' ? 'bg-[#e5e5e5] text-[#161616]' : 'text-[#999] hover:bg-[#333] hover:text-[#e5e5e5]'}`}
+        >
+          Credentials
         </button>
         <button 
           onClick={() => setView('workflow')}
@@ -961,6 +968,8 @@ export default function App() {
             setActiveWorkflowId(id);
             setCurrentView('workflow');
           }} />
+        ) : currentView === 'credentials' ? (
+          <CredentialsManager />
         ) : (
           <ReactFlowProvider>
             <FlowBuilder workflowId={activeWorkflowId} />

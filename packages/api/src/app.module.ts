@@ -5,6 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { EventsController } from './events.controller';
+import { CredentialsController } from './credentials.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { ExecutionProcessor } from './engine/execution.processor';
@@ -33,7 +34,7 @@ const redisConnection: any = process.env.REDIS_URL
       name: 'workflow-executions',
     }),
   ],
-  controllers: [AppController, EventsController],
+  controllers: [AppController, EventsController, CredentialsController],
   providers: [
     AppService, 
     PrismaService, 
