@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -15,13 +15,13 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-const initialNodes: Node[] = [
-  { id: '1', type: 'default', position: { x: 250, y: 5 }, data: { label: 'Webhook Trigger' } },
-];
+const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
-let id = 10;
+let id = Date.now();
 const getId = () => `node_${id++}`;
+
+const WORKFLOW_ID = 'default-workflow';
 
 function Sidebar() {
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
@@ -31,14 +31,22 @@ function Sidebar() {
   };
 
   return (
-    <aside className="w-64 border-r-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10">
+    <aside className="w-64 border-r-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto">
       <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Nodes</h2>
       
       <div className="text-[#e5e5e5] text-xs mb-2">Drag nodes to canvas:</div>
       
       <div 
         className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'default', 'HTTP Request')}
+        onDragStart={(event) => onDragStart(event, 'Webhook', 'Webhook Trigger')}
+        draggable
+      >
+        Webhook Trigger
+      </div>
+
+      <div 
+        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
+        onDragStart={(event) => onDragStart(event, 'HTTPRequest', 'HTTP Request')}
         draggable
       >
         HTTP Request
@@ -46,7 +54,7 @@ function Sidebar() {
       
       <div 
         className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'default', 'AIAgent')}
+        onDragStart={(event) => onDragStart(event, 'AIAgent', 'AI Agent')}
         draggable
       >
         AI Agent
@@ -54,11 +62,107 @@ function Sidebar() {
 
       <div 
         className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'default', 'Set')}
+        onDragStart={(event) => onDragStart(event, 'Set', 'Set Data')}
         draggable
       >
         Set Data
       </div>
+
+      <div 
+        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
+        onDragStart={(event) => onDragStart(event, 'IF', 'IF Condition')}
+        draggable
+      >
+        IF Condition
+      </div>
+    </aside>
+  );
+}
+
+function ConfigPanel({ selectedNode, updateNodeData }: { selectedNode: Node | null, updateNodeData: (id: string, key: string, value: any) => void }) {
+  if (!selectedNode) {
+    return (
+      <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10">
+        <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Config</h2>
+        <div className="text-[#666] text-sm text-center mt-10">Select a node to configure</div>
+      </aside>
+    );
+  }
+
+  const { id, type, data } = selectedNode;
+  const parameters = data.parameters || {};
+
+  return (
+    <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto">
+      <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Config: {data.label}</h2>
+      
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node ID</label>
+        <input type="text" readOnly value={id} className="bg-[#222] border-2 border-[#333] p-2 text-sm text-[#999] outline-none" />
+      </div>
+
+      {type === 'HTTPRequest' && (
+        <>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Method</label>
+            <select 
+              value={parameters.method || 'GET'} 
+              onChange={(e) => updateNodeData(id, 'method', e.target.value)}
+              className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono uppercase"
+            >
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">URL</label>
+            <input 
+              type="text" 
+              value={parameters.url || ''} 
+              onChange={(e) => updateNodeData(id, 'url', e.target.value)}
+              placeholder="https://api.example.com" 
+              className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Body (JSON)</label>
+            <textarea 
+              rows={4}
+              value={parameters.body || ''} 
+              onChange={(e) => updateNodeData(id, 'body', e.target.value)}
+              className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+            />
+          </div>
+        </>
+      )}
+
+      {type === 'IF' && (
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Condition Expression</label>
+          <input 
+            type="text" 
+            value={parameters.condition || ''} 
+            onChange={(e) => updateNodeData(id, 'condition', e.target.value)}
+            placeholder="{{ $json.status === 200 }}" 
+            className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+          />
+        </div>
+      )}
+
+      {type === 'Set' && (
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Value (JSON)</label>
+          <textarea 
+            rows={5}
+            value={parameters.value || ''} 
+            onChange={(e) => updateNodeData(id, 'value', e.target.value)}
+            placeholder='{"key": "value"}'
+            className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+          />
+        </div>
+      )}
     </aside>
   );
 }
@@ -68,6 +172,21 @@ function FlowBuilder() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Load workflow on mount
+  useEffect(() => {
+    fetch(`/api/v1/workflows/${WORKFLOW_ID}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success' && data.data && data.data.WorkflowVersion?.[0]) {
+          const version = data.data.WorkflowVersion[0];
+          if (version.nodes) setNodes(version.nodes);
+          if (version.connections) setEdges(version.connections);
+        }
+      })
+      .catch(err => console.error("Could not load workflow", err));
+  }, [setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -97,15 +216,58 @@ function FlowBuilder() {
 
       const newNode: Node = {
         id: getId(),
-        type,
+        type: 'default', // React flow visual type
         position,
-        data: { label },
+        data: { label, type, parameters: {} }, // Engine type goes here
       };
 
       setNodes((nds) => nds.concat(newNode));
     },
     [reactFlowInstance, setNodes],
   );
+
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
+
+  const updateNodeData = useCallback((id: string, key: string, value: any) => {
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === id) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              parameters: {
+                ...(n.data.parameters || {}),
+                [key]: value
+              }
+            }
+          };
+        }
+        return n;
+      })
+    );
+  }, [setNodes]);
+
+  const saveWorkflow = async () => {
+    try {
+      await fetch(`/api/v1/workflows/${WORKFLOW_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes, connections: edges })
+      });
+      alert('Workflow saved!');
+    } catch (e: any) {
+      alert(`Save failed: ${e.message}`);
+    }
+  };
+
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   return (
     <div className="w-screen h-screen flex flex-col text-[#e5e5e5] font-mono">
@@ -125,24 +287,36 @@ function FlowBuilder() {
           </nav>
 
           <button 
+            onClick={saveWorkflow}
+            className="px-4 py-1.5 border-2 border-[#666] text-[#e5e5e5] font-bold text-sm tracking-widest hover:bg-[#333] transition-all uppercase cursor-pointer"
+          >
+            SAVE
+          </button>
+
+          <button 
             onClick={async () => {
               try {
-                // Map React Flow nodes/edges to our engine format
                 const engineNodes = nodes.map(n => ({
                   id: n.id,
-                  type: n.data.label.replace(/\s+/g, ''), // e.g. "HTTP Request" -> "HTTPRequest"
-                  parameters: {}
+                  type: n.data.type || n.data.label.replace(/\s+/g, ''),
+                  parameters: n.data.parameters || {}
                 }));
                 const engineConnections = edges.map(e => ({
                   source: e.source,
                   target: e.target
                 }));
 
-                const res = await fetch('/api/v1/workflows/test-wf-id/execute', {
+                // Find webhook trigger to start from
+                const triggerNode = engineNodes.find(n => n.type === 'Webhook');
+                const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
+
+                if (!startId) return alert('Add nodes to execute');
+
+                const res = await fetch(`/api/v1/workflows/${WORKFLOW_ID}/execute`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
-                    startingNodeId: '1', 
+                    startingNodeId: startId, 
                     mode: 'manual',
                     nodes: engineNodes,
                     connections: engineConnections
@@ -174,6 +348,8 @@ function FlowBuilder() {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
             fitView
             className="zaggonaut-flow"
           >
@@ -186,6 +362,8 @@ function FlowBuilder() {
             <Background variant={BackgroundVariant.Dots} gap={20} size={2} color="#333333" />
           </ReactFlow>
         </main>
+        
+        <ConfigPanel selectedNode={selectedNode} updateNodeData={updateNodeData} />
       </div>
     </div>
   );

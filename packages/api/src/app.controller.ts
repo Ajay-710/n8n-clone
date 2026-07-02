@@ -53,24 +53,101 @@ export class AppController {
     }
   }
 
+  @Get('workflows/:id')
+  async getWorkflow(@Param('id') workflowId: string) {
+    try {
+      // Create if it doesn't exist for the prototype phase
+      let workflow = await this.prisma.workflow.findUnique({
+        where: { id: workflowId },
+        include: { WorkflowVersion: { orderBy: { version: 'desc' }, take: 1 } }
+      });
+      
+      if (!workflow) {
+        // Create a default workspace first if none exists
+        let workspace = await this.prisma.workspace.findFirst();
+        if (!workspace) {
+          const org = await this.prisma.organization.create({ data: { name: 'Zaggonaut Org', userId: 'default-user' }});
+          workspace = await this.prisma.workspace.create({ data: { name: 'Default Workspace', organizationId: org.id }});
+        }
+
+        workflow = await this.prisma.workflow.create({
+          data: {
+            id: workflowId,
+            name: 'Default Workflow',
+            workspaceId: workspace.id,
+            WorkflowVersion: {
+              create: {
+                version: 1,
+                nodes: [],
+                connections: []
+              }
+            }
+          },
+          include: { WorkflowVersion: { orderBy: { version: 'desc' }, take: 1 } }
+        });
+      }
+      return { status: 'success', data: workflow };
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
+  }
+
+  @Put('workflows/:id')
+  async updateWorkflow(@Param('id') workflowId: string, @Body() body: any) {
+    try {
+      const { nodes, connections } = body;
+      
+      // We just push a new version for simplicity
+      const newVersion = await this.prisma.workflowVersion.create({
+        data: {
+          workflowId,
+          version: Date.now(), // simple auto-increment for prototype
+          nodes,
+          connections
+        }
+      });
+      
+      return { status: 'success', data: newVersion };
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
+  }
+
   @Post('workflows/:id/execute')
   async executeWorkflow(@Param('id') workflowId: string, @Body() body: any) {
-    const { startingNodeId, mode = 'manual' } = body;
-    
-    // In production, fetch nodes and connections from the database using the workflowId
-    // For this prototype phase, we will mock the DAG structure if the DB is unavailable
-    const mockNodes = [
-      { id: 'node-1', type: 'Webhook', parameters: {} },
-      { id: 'node-2', type: 'Set', parameters: { text: 'Hello Zaggonaut!' } }
-    ];
-    const mockConnections = [{ source: 'node-1', target: 'node-2' }];
+    const { startingNodeId, mode = 'manual', nodes, connections } = body;
+
+    // Create execution record
+    let versionId = null;
+    try {
+      const workflow = await this.prisma.workflow.findUnique({
+        where: { id: workflowId },
+        include: { WorkflowVersion: { orderBy: { version: 'desc' }, take: 1 } }
+      });
+      if (workflow && workflow.WorkflowVersion.length > 0) {
+        versionId = workflow.WorkflowVersion[0].id;
+      }
+    } catch (e) {}
+
+    let executionId = `exec-${Date.now()}`;
+    if (versionId) {
+      const execution = await this.prisma.execution.create({
+        data: {
+          id: executionId,
+          workflowVersionId: versionId,
+          status: 'queued',
+          mode
+        }
+      });
+      executionId = execution.id;
+    }
 
     // Dispatch job to Redis queue
     const job = await this.executionQueue.add('execute-workflow', {
-      executionId: `exec-${Date.now()}`,
-      nodes: mockNodes,
-      connections: mockConnections,
-      startingNodeId: startingNodeId || 'node-1',
+      executionId: executionId,
+      nodes: nodes,
+      connections: connections,
+      startingNodeId: startingNodeId,
     });
 
     return { 
@@ -78,5 +155,60 @@ export class AppController {
       executionId: job.data.executionId,
       message: 'Workflow execution dispatched to background workers successfully'
     };
+  }
+
+  @Post('webhook/:workflowId')
+  async webhookTrigger(@Param('workflowId') workflowId: string, @Body() body: any) {
+    try {
+      const workflow = await this.prisma.workflow.findUnique({
+        where: { id: workflowId },
+        include: { WorkflowVersion: { orderBy: { version: 'desc' }, take: 1 } }
+      });
+
+      if (!workflow || workflow.WorkflowVersion.length === 0) {
+        return { status: 'error', message: 'Workflow not found or has no versions' };
+      }
+
+      const latestVersion = workflow.WorkflowVersion[0];
+      const nodes = latestVersion.nodes as any[];
+      const connections = latestVersion.connections as any[];
+      
+      const triggerNode = nodes.find(n => n.type === 'Webhook' || n.data?.type === 'Webhook');
+      if (!triggerNode) {
+        return { status: 'error', message: 'No webhook trigger found in this workflow' };
+      }
+
+      // Inject the payload into the webhook node's output somehow, or just pass it as start context
+      // For now, we execute from the trigger node
+      const execution = await this.prisma.execution.create({
+        data: {
+          workflowVersionId: latestVersion.id,
+          status: 'queued',
+          mode: 'webhook'
+        }
+      });
+
+      // We should ideally inject the webhook body into the execution engine context here
+      // We will do that by modifying the trigger node's parameters temporarily
+      const triggerNodeIndex = nodes.findIndex(n => n.id === triggerNode.id);
+      nodes[triggerNodeIndex] = {
+        ...nodes[triggerNodeIndex],
+        parameters: {
+          ...(nodes[triggerNodeIndex].parameters || {}),
+          payload: body
+        }
+      };
+
+      const job = await this.executionQueue.add('execute-workflow', {
+        executionId: execution.id,
+        nodes: nodes,
+        connections: connections,
+        startingNodeId: triggerNode.id,
+      });
+
+      return { status: 'queued', executionId: execution.id };
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
   }
 }

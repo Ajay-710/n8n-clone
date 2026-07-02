@@ -45,9 +45,6 @@ export class WorkflowRunner {
     return this.executionData;
   }
 
-  /**
-   * Routes the node to its specific execution logic
-   */
   private async executeNode(node: WorkflowNode): Promise<any> {
     // Context available for this node's expressions
     const context = {
@@ -58,23 +55,67 @@ export class WorkflowRunner {
     // Resolve any {{ }} expressions in the node parameters before running
     const resolvedParams = ExpressionSandbox.resolveParameters(node.parameters || {}, context);
 
-    // Mock Node Implementations
     switch (node.type) {
       case 'Webhook':
       case 'ManualTrigger':
-        return { message: 'Triggered successfully' };
+        // The trigger payload is injected into parameters by the controller
+        return resolvedParams.payload || { message: 'Triggered successfully' };
         
       case 'Set':
-        return resolvedParams;
+        // Try to parse the text as JSON, or return as string
+        try {
+          return typeof resolvedParams.value === 'string' ? JSON.parse(resolvedParams.value) : resolvedParams.value;
+        } catch {
+          return { value: resolvedParams.value };
+        }
         
       case 'HTTPRequest':
-        // Mocking an HTTP Request node
-        console.log(`[Engine] Executing HTTP Request to ${resolvedParams.url}`);
-        return { status: 200, body: `Response from ${resolvedParams.url}` };
+        console.log(`[Engine] Executing real HTTP Request to ${resolvedParams.url}`);
+        const method = resolvedParams.method || 'GET';
+        let body = undefined;
+        
+        if (['POST', 'PUT', 'PATCH'].includes(method) && resolvedParams.body) {
+          try {
+            body = typeof resolvedParams.body === 'string' ? resolvedParams.body : JSON.stringify(resolvedParams.body);
+          } catch (e) {
+            body = String(resolvedParams.body);
+          }
+        }
+
+        try {
+          const response = await fetch(resolvedParams.url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body
+          });
+          
+          let responseBody;
+          try {
+            responseBody = await response.json();
+          } catch {
+            responseBody = await response.text();
+          }
+
+          return { 
+            status: response.status, 
+            ok: response.ok, 
+            body: responseBody 
+          };
+        } catch (error: any) {
+          return { 
+            error: error.message,
+            stack: error.stack
+          };
+        }
         
       case 'IF':
         console.log(`[Engine] Evaluating condition: ${resolvedParams.condition}`);
-        return { result: Boolean(resolvedParams.condition) };
+        let result = false;
+        try {
+          // If condition is e.g. "true" or evaluated to a boolean
+          result = resolvedParams.condition === true || resolvedParams.condition === 'true';
+        } catch (e) {}
+        return { result };
 
       case 'AIAgent':
         console.log(`[Engine] Initializing AI Agent: ${resolvedParams.model}`);
@@ -98,7 +139,6 @@ export class WorkflowRunner {
 
       case 'ExecuteWorkflow':
         console.log(`[Engine] Triggering Sub-Workflow ID: ${resolvedParams.workflowId}`);
-        // In a real implementation, we would fetch the sub-workflow nodes from the DB and spawn a new WorkflowRunner
         return { subWorkflowResult: 'Completed successfully', executionId: `sub-${Date.now()}` };
 
       default:
