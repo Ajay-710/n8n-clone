@@ -11,11 +11,13 @@ import ReactFlow, {
 } from 'reactflow';
 import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
 import CustomNode from './components/CustomNode';
+import StickyNode from './components/StickyNode';
 import CredentialsManager from './components/CredentialsManager';
 import 'reactflow/dist/style.css';
 
 const nodeTypes = {
-  default: CustomNode
+  default: CustomNode,
+  StickyNode: StickyNode
 };
 
 const initialNodes: Node[] = [];
@@ -88,6 +90,7 @@ const NODE_CATALOG = [
   { type: 'AIAgent', label: 'AI Agent', category: 'AI', description: 'Run an AI prompt', icon: '🧠' },
   { type: 'Set', label: 'Set Data', category: 'Data', description: 'Set specific values', icon: '🔧' },
   { type: 'IF', label: 'IF Condition', category: 'Logic', description: 'Branch based on condition', icon: '🔀' },
+  { type: 'StickyNode', label: 'Sticky Note', category: 'Notes', description: 'Add a text note to the canvas', icon: '📝' },
 ];
 
 function NodePicker({ 
@@ -541,10 +544,10 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
           setNodes(nds => nds.map(n => n.id === payload.nodeId ? { ...n, className: '!border-[#ff4444] !bg-[#331111] shadow-[0_0_15px_rgba(255,68,68,0.4)]' } : n));
         } else if (payload.type === 'execution.completed') {
           setExecutionMode('idle');
-          alert('Execution finished successfully!');
+          // Removed alert
         } else if (payload.type === 'execution.failed') {
           setExecutionMode('idle');
-          alert(`Execution failed: ${payload.error}`);
+          // Removed alert
         }
       } catch (err) {}
     };
@@ -618,7 +621,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
 
       const newNode: Node = {
         id: getId(),
-        type: 'default', // React flow visual type
+        type: type === 'StickyNode' ? 'StickyNode' : 'default', // React flow visual type
         position,
         data: { label, type, parameters: {} }, // Engine type goes here
       };
@@ -645,7 +648,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
     const position = reactFlowInstance ? reactFlowInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 }) : { x: 100, y: 100 };
     const newNode: Node = {
       id: getId(),
-      type: 'default',
+      type: type === 'StickyNode' ? 'StickyNode' : 'default',
       position,
       data: { label, type, parameters: {} },
     };
@@ -868,7 +871,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
                       const triggerNode = engineNodes.find(n => n.type === 'Webhook');
                       const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
 
-                      if (!startId) return alert('Add nodes to execute');
+                      if (!startId) return;
 
                       setExecutionMode('running');
                       const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
@@ -883,11 +886,9 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
                       });
                       const data = await res.json();
                       if (data.status !== 'success') {
-                        alert(`Execution failed: ${data.message || 'Unknown error'}`);
                         setExecutionMode('idle');
                       }
                     } catch (e: any) {
-                      alert(`Execution failed: ${e.message}`);
                       setExecutionMode('idle');
                     }
                   }}
@@ -920,7 +921,6 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
                   onClick={() => {
                     setIsExecuteMenuOpen(false);
                     setExecutionMode('waiting');
-                    alert(`Listening for webhook requests at: \n\nPOST /api/v1/webhook/${workflowId}`);
                   }}
                   className="p-3 text-left text-xs font-bold text-[#e5e5e5] hover:bg-[#333] transition-colors uppercase tracking-wider"
                 >
