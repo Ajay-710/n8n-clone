@@ -256,7 +256,8 @@ function ConfigPanel({
 
   if (!selectedNode) return null;
 
-  const { id, type, data } = selectedNode;
+  const { id, data } = selectedNode;
+  const type = data?.type || selectedNode.type;
   const parameters = data.parameters || {};
   const outputData = executionData ? executionData[id] : null;
 
