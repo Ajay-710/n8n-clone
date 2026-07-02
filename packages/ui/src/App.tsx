@@ -942,7 +942,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           startingNodeId: startId, 
-          mode: 'manual',
+          mode: specificNodeId ? 'single-step' : 'manual',
           nodes: engineNodes,
           connections: engineConnections
         })

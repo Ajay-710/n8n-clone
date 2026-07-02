@@ -203,12 +203,12 @@ export class AppController {
       executionId = execution.id;
     }
 
-    // Dispatch job to Redis queue
     const job = await this.executionQueue.add('execute-workflow', {
       executionId: executionId,
       nodes: nodes,
       connections: connections,
       startingNodeId: startingNodeId,
+      mode: mode
     });
 
     return { 

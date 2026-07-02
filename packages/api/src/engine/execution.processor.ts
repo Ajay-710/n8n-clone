@@ -15,7 +15,7 @@ export class ExecutionProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
-    const { executionId, nodes, connections, startingNodeId } = job.data;
+    const { executionId, nodes, connections, startingNodeId, mode } = job.data;
     
     console.log(`[BullMQ Worker] Picked up execution job ${executionId}`);
     
@@ -54,7 +54,7 @@ export class ExecutionProcessor extends WorkerHost {
       }, credentialsMap);
       
       // Execute the DAG
-      const finalState = await runner.execute(startingNodeId);
+      const finalState = await runner.execute(startingNodeId, mode);
       
       // Mark as success
       if (executionExists) {

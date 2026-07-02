@@ -32,9 +32,34 @@ export class WorkflowRunner {
    * Executes the entire workflow graph using a BFS/Queue traversal.
    * Ensures nodes with multiple inputs wait for all dependencies before running.
    */
-  async execute(startNodeId: string) {
-    const queue = [startNodeId];
-    
+  async execute(startNodeId: string, mode: string = 'manual') {
+    const queue: string[] = [];
+    const stopAfterNodes = new Set<string>();
+
+    if (mode === 'single-step') {
+      // Trace backwards to find all required ancestors
+      const ancestors = new Set<string>();
+      const getAncestors = (id: string) => {
+        ancestors.add(id);
+        const incoming = this.connections.filter(c => c.target === id);
+        incoming.forEach(c => {
+          if (!ancestors.has(c.source)) getAncestors(c.source);
+        });
+      };
+      getAncestors(startNodeId);
+
+      // Start queue with ancestor nodes that have no incoming connections
+      const sources = Array.from(ancestors).filter(id => {
+        return !this.connections.some(c => c.target === id && ancestors.has(c.source));
+      });
+      queue.push(...sources);
+      
+      // We only execute up to startNodeId
+      stopAfterNodes.add(startNodeId);
+    } else {
+      queue.push(startNodeId);
+    }
+
     // Track execution status of nodes
     const nodeStatus: Record<string, 'pending' | 'completed' | 'failed'> = {};
     this.nodes.forEach(n => nodeStatus[n.id] = 'pending');
@@ -100,24 +125,26 @@ export class WorkflowRunner {
         this.onEvent?.('node.completed', { nodeId: node.id, output: result });
 
         // Add downstream nodes to queue
-        const nextConns = this.connections.filter(c => c.source === node.id);
-        
-        for (const conn of nextConns) {
-          // If this is an edge from an IF or Switch node, we need to filter the output data being passed
-          let passData = true;
-          if (conn.sourceHandle) {
-             const hasDataForHandle = result.some(item => 
-               (conn.sourceHandle === 'true' && item.json.matched === true) ||
-               (conn.sourceHandle === 'false' && item.json.matched === false) ||
-               (item.json.branch === conn.sourceHandle) // for Switch nodes
-             );
-             if (!hasDataForHandle) {
-               passData = false; // Do not trigger downstream node if no items matched this branch
-             }
-          }
+        if (!stopAfterNodes.has(node.id)) {
+          const nextConns = this.connections.filter(c => c.source === node.id);
+          
+          for (const conn of nextConns) {
+            // If this is an edge from an IF or Switch node, we need to filter the output data being passed
+            let passData = true;
+            if (conn.sourceHandle) {
+               const hasDataForHandle = result.some(item => 
+                 (conn.sourceHandle === 'true' && item.json.matched === true) ||
+                 (conn.sourceHandle === 'false' && item.json.matched === false) ||
+                 (item.json.branch === conn.sourceHandle) // for Switch nodes
+               );
+               if (!hasDataForHandle) {
+                 passData = false; // Do not trigger downstream node if no items matched this branch
+               }
+            }
 
-          if (passData && !queue.includes(conn.target) && nodeStatus[conn.target] === 'pending') {
-            queue.push(conn.target);
+            if (passData && !queue.includes(conn.target) && nodeStatus[conn.target] === 'pending') {
+              queue.push(conn.target);
+            }
           }
         }
 
