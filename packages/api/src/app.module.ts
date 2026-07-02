@@ -20,7 +20,7 @@ const redisConnection: any = process.env.REDIS_URL
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'ui', 'dist'),
+      rootPath: join(__dirname, '..', '..', '..', 'ui', 'dist'),
       exclude: ['/api/(.*)'],
     }),
     BullModule.forRoot({
