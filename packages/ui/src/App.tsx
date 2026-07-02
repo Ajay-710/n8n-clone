@@ -164,119 +164,222 @@ function ConfigPanel({
   selectedNode, 
   updateNodeData, 
   deleteNode,
-  executionData
+  executionData,
+  onClose
 }: { 
   selectedNode: Node | null, 
   updateNodeData: (id: string, key: string, value: any) => void, 
   deleteNode: (id: string) => void,
-  executionData?: Record<string, any>
+  executionData?: Record<string, any>,
+  onClose: () => void
 }) {
-  if (!selectedNode) {
-    return (
-      <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 shrink-0">
-        <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Config</h2>
-        <div className="text-[#666] text-sm text-center mt-10">Select a node to configure</div>
-      </aside>
-    );
-  }
+  const [leftTab, setLeftTab] = useState<'parameters' | 'settings'>('parameters');
+  const [rightTab, setRightTab] = useState<'input' | 'output'>('output');
+
+  if (!selectedNode) return null;
 
   const { id, type, data } = selectedNode;
   const parameters = data.parameters || {};
   const outputData = executionData ? executionData[id] : null;
 
   return (
-    <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative shrink-0">
-      <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">
-        {executionData ? 'Execution Output' : 'Config: ' + data.label}
-      </h2>
-
-      {executionData ? (
-        <div className="flex flex-col gap-2 h-full">
-          <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node ID: {id}</label>
-          <div className="mt-2 text-xs font-bold text-[#00ffcc] uppercase tracking-wider">JSON Output</div>
-          <div className="flex-1 bg-[#111] border-2 border-[#333] p-2 overflow-auto text-xs text-[#e5e5e5] font-mono whitespace-pre-wrap">
-            {outputData ? JSON.stringify(outputData.json, null, 2) : 'No output data for this node in this execution.'}
+    <div className="absolute inset-0 z-50 bg-[#161616] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-200">
+      {/* Header */}
+      <header className="h-16 border-b-2 border-[#333] flex items-center px-6 shrink-0 justify-between bg-[#111]">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 bg-[#222] border-2 border-[#333] flex items-center justify-center">
+            <span className="text-[#00ffcc] font-bold text-xs">{type.substring(0, 2).toUpperCase()}</span>
+          </div>
+          <div>
+            <h2 className="font-bold text-[#e5e5e5] tracking-widest uppercase">{data.label}</h2>
+            <div className="text-[10px] text-[#999] uppercase tracking-wider">{type} - {id}</div>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node ID</label>
-            <input type="text" readOnly value={id} className="bg-[#222] border-2 border-[#333] p-2 text-sm text-[#999] outline-none" />
-          </div>
-
-          {type === 'HTTPRequest' && (
-            <>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Method</label>
-                <select 
-                  value={parameters.method || 'GET'} 
-                  onChange={(e) => updateNodeData(id, 'method', e.target.value)}
-                  className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono uppercase"
-                >
-                  <option value="GET">GET</option>
-                  <option value="POST">POST</option>
-                  <option value="PUT">PUT</option>
-                  <option value="DELETE">DELETE</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">URL</label>
-                <input 
-                  type="text" 
-                  value={parameters.url || ''} 
-                  onChange={(e) => updateNodeData(id, 'url', e.target.value)}
-                  placeholder="https://api.example.com" 
-                  className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Body (JSON)</label>
-                <textarea 
-                  rows={4}
-                  value={parameters.body || ''} 
-                  onChange={(e) => updateNodeData(id, 'body', e.target.value)}
-                  className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-                />
-              </div>
-            </>
-          )}
-
-          {type === 'IF' && (
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Condition Expression</label>
-              <input 
-                type="text" 
-                value={parameters.condition || ''} 
-                onChange={(e) => updateNodeData(id, 'condition', e.target.value)}
-                placeholder="{{ $json.status === 200 }}" 
-                className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-              />
-            </div>
-          )}
-
-          {type === 'Set' && (
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Value (JSON)</label>
-              <textarea 
-                rows={5}
-                value={parameters.value || ''} 
-                onChange={(e) => updateNodeData(id, 'value', e.target.value)}
-                placeholder='{"key": "value"}'
-                className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-              />
-            </div>
-          )}
-
-          <button 
-            onClick={() => deleteNode(id)}
-            className="mt-8 px-4 py-2 border-2 border-[#ff4444] text-[#ff4444] font-bold text-sm tracking-widest hover:bg-[#ff4444] hover:text-[#161616] transition-all uppercase cursor-pointer"
-          >
-            DELETE NODE
+        <div className="flex items-center gap-4">
+          <button onClick={() => deleteNode(id)} className="p-2 border-2 border-[#ff4444] text-[#ff4444] hover:bg-[#ff4444] hover:text-[#161616] transition-colors" title="Delete Node">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="square" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           </button>
-        </>
-      )}
-    </aside>
+          <div className="w-px h-6 bg-[#333]"></div>
+          <button onClick={onClose} className="p-2 border-2 border-[#333] text-[#e5e5e5] hover:bg-[#333] transition-colors" title="Close Editor">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="square" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Pane - Config */}
+        <div className="w-1/2 border-r-2 border-[#333] flex flex-col">
+          <div className="flex border-b-2 border-[#333]">
+            {['parameters', 'settings'].map(tab => (
+              <button 
+                key={tab} 
+                onClick={() => setLeftTab(tab as any)}
+                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${leftTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc] bg-opacity-5' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {leftTab === 'parameters' && (
+              <>
+                {type === 'HTTPRequest' && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Method</label>
+                      <select 
+                        value={parameters.method || 'GET'} 
+                        onChange={(e) => updateNodeData(id, 'method', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono uppercase transition-colors"
+                      >
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">URL</label>
+                      <input 
+                        type="text" 
+                        value={parameters.url || ''} 
+                        onChange={(e) => updateNodeData(id, 'url', e.target.value)}
+                        placeholder="https://api.example.com" 
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                      />
+                    </div>
+                    {['POST', 'PUT', 'PATCH'].includes(parameters.method || 'GET') && (
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Body (JSON)</label>
+                        <textarea 
+                          rows={6}
+                          value={parameters.body || ''} 
+                          onChange={(e) => updateNodeData(id, 'body', e.target.value)}
+                          className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {type === 'IF' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Condition Expression</label>
+                    <input 
+                      type="text" 
+                      value={parameters.condition || ''} 
+                      onChange={(e) => updateNodeData(id, 'condition', e.target.value)}
+                      placeholder="{{ $json.status === 200 }}" 
+                      className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                    />
+                    <span className="text-[10px] text-[#999] mt-1">Use JavaScript expressions to evaluate data from previous nodes.</span>
+                  </div>
+                )}
+
+                {type === 'Set' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Fields to Set (JSON)</label>
+                    <textarea 
+                      rows={6}
+                      value={parameters.value || ''} 
+                      onChange={(e) => updateNodeData(id, 'value', e.target.value)}
+                      placeholder='{"key": "value", "dynamic": "{{$json.id}}"}'
+                      className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                    />
+                  </div>
+                )}
+                
+                {type === 'Webhook' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">HTTP Method</label>
+                    <select 
+                      value={parameters.method || 'POST'} 
+                      onChange={(e) => updateNodeData(id, 'method', e.target.value)}
+                      className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono uppercase transition-colors"
+                    >
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                    </select>
+                    
+                    <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider mt-4">Path</label>
+                    <input 
+                      type="text" 
+                      value={parameters.path || ''} 
+                      onChange={(e) => updateNodeData(id, 'path', e.target.value)}
+                      placeholder="webhook" 
+                      className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                    />
+                    <span className="text-[10px] text-[#00ffcc] mt-1 break-all">URL: /api/v1/webhook/workflow_id/{parameters.path || 'webhook'}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {leftTab === 'settings' && (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node Name</label>
+                  <input type="text" value={data.label} onChange={(e) => updateNodeData(id, 'label', e.target.value)} className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none transition-colors" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Notes</label>
+                  <textarea rows={4} className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none transition-colors" placeholder="Add notes here to document this node's purpose..." />
+                </div>
+                <div className="flex items-center gap-2 mt-4 p-4 border-2 border-[#333] bg-[#222]">
+                  <input type="checkbox" className="w-4 h-4 bg-[#161616] border-2 border-[#333] accent-[#00ffcc]" />
+                  <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Continue On Fail</label>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Pane - Execution Data */}
+        <div className="w-1/2 flex flex-col bg-[#111]">
+          <div className="flex border-b-2 border-[#333] bg-[#161616]">
+            {['input', 'output'].map(tab => (
+              <button 
+                key={tab} 
+                onClick={() => setRightTab(tab as any)}
+                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${rightTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc] bg-opacity-5' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 overflow-auto p-6 flex flex-col">
+            {rightTab === 'input' && (
+              <div className="text-center mt-20 text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8">
+                Input data will be displayed here.<br/><br/>
+                Execute previous nodes to see data flowing into this node.
+              </div>
+            )}
+            {rightTab === 'output' && (
+              <div className="flex flex-col h-full gap-4">
+                {outputData ? (
+                  <>
+                    <div className="flex items-center gap-4 text-[10px] uppercase font-bold text-[#00ffcc] tracking-widest border border-[#333] p-2 bg-[#161616]">
+                      <span>Items: {Array.isArray(outputData.json) ? outputData.json.length : 1}</span>
+                      <span className="w-px h-3 bg-[#333]"></span>
+                      <span>JSON Mode</span>
+                    </div>
+                    <div className="flex-1 bg-[#161616] border-2 border-[#333] p-4 overflow-auto text-xs text-[#e5e5e5] font-mono whitespace-pre-wrap selection:bg-[#00ffcc] selection:text-[#161616]">
+                      {JSON.stringify(outputData.json, null, 2)}
+                    </div>
+                  </>
+                ) : (
+                   <div className="text-center mt-20 text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8">
+                     No output data available.<br/><br/>
+                     Run this node to generate output.
+                   </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -747,11 +850,13 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
           {!showExecutions && <NodePicker onDragStart={onDragStart} />}
         </main>
         
+        
         <ConfigPanel 
           selectedNode={selectedNode} 
           updateNodeData={updateNodeData} 
           deleteNode={deleteNode} 
           executionData={showExecutions && selectedExecution ? selectedExecution.executionData : undefined}
+          onClose={() => setSelectedNodeId(null)}
         />
       </div>
     </div>
