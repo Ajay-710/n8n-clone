@@ -188,7 +188,7 @@ function ConfigPanel({
       <header className="h-16 border-b-2 border-[#333] flex items-center px-6 shrink-0 justify-between bg-[#111]">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 bg-[#222] border-2 border-[#333] flex items-center justify-center">
-            <span className="text-[#00ffcc] font-bold text-xs">{type.substring(0, 2).toUpperCase()}</span>
+            <span className="text-[#00ffcc] font-bold text-xs">{(type || data?.label || 'UN').substring(0, 2).toUpperCase()}</span>
           </div>
           <div>
             <h2 className="font-bold text-[#e5e5e5] tracking-widest uppercase">{data.label}</h2>
