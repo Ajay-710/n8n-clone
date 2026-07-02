@@ -48,11 +48,14 @@ export class ExecutionProcessor extends WorkerHost {
         });
       }
       
+      this.eventEmitter.emit('execution.event', { type: 'execution.completed', executionId, finalState });
       console.log(`[BullMQ Worker] Execution ${executionId} completed successfully.`);
       return finalState;
 
     } catch (error: any) {
       console.error(`[BullMQ Worker] Execution ${executionId} failed:`, error.message);
+      
+      this.eventEmitter.emit('execution.event', { type: 'execution.failed', executionId, error: error.message });
       
       // Mark as failed
       const executionExists = await this.prisma.execution.findUnique({ where: { id: executionId } });

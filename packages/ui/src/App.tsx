@@ -309,6 +309,12 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
           setNodes(nds => nds.map(n => n.id === payload.nodeId ? { ...n, className: '!border-[#00ffcc] !bg-[#003322] shadow-[0_0_15px_rgba(0,255,204,0.4)]' } : n));
         } else if (payload.type === 'node.failed') {
           setNodes(nds => nds.map(n => n.id === payload.nodeId ? { ...n, className: '!border-[#ff4444] !bg-[#331111] shadow-[0_0_15px_rgba(255,68,68,0.4)]' } : n));
+        } else if (payload.type === 'execution.completed') {
+          setExecutionMode('idle');
+          alert('Execution finished successfully!');
+        } else if (payload.type === 'execution.failed') {
+          setExecutionMode('idle');
+          alert(`Execution failed: ${payload.error}`);
         }
       } catch (err) {}
     };
@@ -620,9 +626,6 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
                       const data = await res.json();
                       if (data.status !== 'success') {
                         alert(`Execution failed: ${data.message || 'Unknown error'}`);
-                        setExecutionMode('idle');
-                      } else {
-                        // Execution finished
                         setExecutionMode('idle');
                       }
                     } catch (e: any) {
