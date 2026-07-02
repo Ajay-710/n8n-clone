@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, All, Req } from '@nestjs/common';
+
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { AppService } from './app.service';
@@ -219,67 +220,86 @@ export class AppController {
     };
   }
 
-  @Get('webhook/:workflowId/:path')
-  async webhookTriggerGet(@Param('workflowId') workflowId: string, @Param('path') path: string, @Body() body: any) {
-    return this.processWebhook(workflowId, path, body);
-  }
-
-  @Post('webhook/:workflowId/:path')
-  async webhookTriggerPost(@Param('workflowId') workflowId: string, @Param('path') path: string, @Body() body: any) {
-    return this.processWebhook(workflowId, path, body);
-  }
-
-  private async processWebhook(workflowId: string, path: string, body: any) {
+  @All('webhook/:path(*)')
+  async handleDynamicWebhook(@Param('path') path: string, @Req() req: any, @Body() body: any) {
     try {
-      const workflow = await this.prisma.workflow.findUnique({
-        where: { id: workflowId },
+      const workflows = await this.prisma.workflow.findMany({
+        where: { active: true },
+        include: { WorkflowVersion: { orderBy: { version: 'desc' }, take: 1 } }
+      });
+      // Fallback for MVP: if no active workflows match, check inactive ones (since activate toggle might be unimplemented)
+      const allWorkflows = workflows.length > 0 ? workflows : await this.prisma.workflow.findMany({
         include: { WorkflowVersion: { orderBy: { version: 'desc' }, take: 1 } }
       });
 
-      if (!workflow || workflow.WorkflowVersion.length === 0) {
-        return { status: 'error', message: 'Workflow not found or has no versions' };
+      let targetWorkflowVersionId: string | null = null;
+      let targetNodes: any[] = [];
+      let targetConnections: any[] = [];
+      let startingNodeId: string | null = null;
+      let matchedNode: any = null;
+
+      for (const w of allWorkflows) {
+        if (w.WorkflowVersion.length > 0) {
+          const v = w.WorkflowVersion[0];
+          const nodes = v.nodes as any[];
+          
+          const webhookNode = nodes.find(n => 
+            (n.type === 'Webhook' || n.data?.type === 'Webhook') && 
+            (n.data?.parameters?.path === path || n.parameters?.path === path)
+          );
+
+          if (webhookNode) {
+            // Check method match (default GET/POST)
+            const expectedMethod = (webhookNode.data?.parameters?.method || webhookNode.parameters?.method || 'GET').toUpperCase();
+            if (expectedMethod !== req.method) {
+               return { status: 'error', message: `Webhook method mismatch. Expected ${expectedMethod}, got ${req.method}` };
+            }
+
+            targetWorkflowVersionId = v.id;
+            targetNodes = nodes;
+            targetConnections = v.connections as any[];
+            startingNodeId = webhookNode.id;
+            matchedNode = webhookNode;
+            break;
+          }
+        }
       }
 
-      const latestVersion = workflow.WorkflowVersion[0];
-      const nodes = latestVersion.nodes as any[];
-      const connections = latestVersion.connections as any[];
-      
-      const triggerNode = nodes.find(n => n.type === 'Webhook' || n.data?.type === 'Webhook');
-      if (!triggerNode) {
-        return { status: 'error', message: 'No webhook trigger found in this workflow' };
+      if (!targetWorkflowVersionId) {
+        return { status: 'error', message: `No workflow registered for webhook path: ${path}` };
       }
 
-      // Inject the payload into the webhook node's output somehow, or just pass it as start context
-      // For now, we execute from the trigger node
+      const executionId = `exec-${Date.now()}`;
       const execution = await this.prisma.execution.create({
         data: {
-          workflowVersionId: latestVersion.id,
+          id: executionId,
+          workflowVersionId: targetWorkflowVersionId,
           status: 'queued',
           mode: 'webhook'
         }
       });
 
-      // We should ideally inject the webhook body into the execution engine context here
-      // We will do that by modifying the trigger node's parameters temporarily
-      const triggerNodeIndex = nodes.findIndex(n => n.id === triggerNode.id);
-      nodes[triggerNodeIndex] = {
-        ...nodes[triggerNodeIndex],
-        parameters: {
-          ...(nodes[triggerNodeIndex].parameters || {}),
-          payload: body
-        }
-      };
-
+      // Pass the webhook payload (query string for GET, body for POST) as the trigger data
+      const webhookPayload = req.method === 'GET' ? req.query : body;
+      
       const job = await this.executionQueue.add('execute-workflow', {
         executionId: execution.id,
-        nodes: nodes,
-        connections: connections,
-        startingNodeId: triggerNode.id,
+        nodes: targetNodes,
+        connections: targetConnections,
+        startingNodeId: startingNodeId,
+        mode: 'webhook',
+        triggerPayload: webhookPayload
       });
 
-      return { status: 'queued', executionId: execution.id };
+      return { 
+        status: 'queued', 
+        executionId: execution.id,
+        message: 'Webhook processed successfully'
+      };
     } catch (e: any) {
       return { status: 'error', message: e.message };
     }
   }
+
+
 }

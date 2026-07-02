@@ -463,7 +463,7 @@ function ConfigPanel({
                       placeholder="webhook" 
                       className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                     />
-                    <span className="text-[10px] text-[#00ffcc] mt-1 break-all">URL: /api/v1/webhook/workflow_id/{parameters.path || 'webhook'}</span>
+                    <span className="text-[10px] text-[#00ffcc] mt-1 break-all">URL: /api/v1/webhook/{parameters.path || 'webhook'}</span>
                   </div>
                 )}
                 {type === 'AIAgent' && (
