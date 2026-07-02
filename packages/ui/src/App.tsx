@@ -7,6 +7,14 @@ import ReactFlow, {
   useEdgesState,
   addEdge,
   BackgroundVariant,
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  BackgroundVariant,
   ReactFlowProvider,
 } from 'reactflow';
 import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
@@ -76,7 +84,17 @@ function Sidebar() {
   );
 }
 
-function ConfigPanel({ selectedNode, updateNodeData, deleteNode }: { selectedNode: Node | null, updateNodeData: (id: string, key: string, value: any) => void, deleteNode: (id: string) => void }) {
+function ConfigPanel({ 
+  selectedNode, 
+  updateNodeData, 
+  deleteNode,
+  executionData
+}: { 
+  selectedNode: Node | null, 
+  updateNodeData: (id: string, key: string, value: any) => void, 
+  deleteNode: (id: string) => void,
+  executionData?: Record<string, any>
+}) {
   if (!selectedNode) {
     return (
       <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10">
@@ -88,85 +106,100 @@ function ConfigPanel({ selectedNode, updateNodeData, deleteNode }: { selectedNod
 
   const { id, type, data } = selectedNode;
   const parameters = data.parameters || {};
+  const outputData = executionData ? executionData[id] : null;
 
   return (
     <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative">
-      <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Config: {data.label}</h2>
-      
-      <div className="flex flex-col gap-2">
-        <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node ID</label>
-        <input type="text" readOnly value={id} className="bg-[#222] border-2 border-[#333] p-2 text-sm text-[#999] outline-none" />
-      </div>
+      <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">
+        {executionData ? 'Execution Output' : 'Config: ' + data.label}
+      </h2>
 
-      {type === 'HTTPRequest' && (
+      {executionData ? (
+        <div className="flex flex-col gap-2 h-full">
+          <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node ID: {id}</label>
+          <div className="mt-2 text-xs font-bold text-[#00ffcc] uppercase tracking-wider">JSON Output</div>
+          <div className="flex-1 bg-[#111] border-2 border-[#333] p-2 overflow-auto text-xs text-[#e5e5e5] font-mono whitespace-pre-wrap">
+            {outputData ? JSON.stringify(outputData.json, null, 2) : 'No output data for this node in this execution.'}
+          </div>
+        </div>
+      ) : (
         <>
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Method</label>
-            <select 
-              value={parameters.method || 'GET'} 
-              onChange={(e) => updateNodeData(id, 'method', e.target.value)}
-              className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono uppercase"
-            >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="DELETE">DELETE</option>
-            </select>
+            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node ID</label>
+            <input type="text" readOnly value={id} className="bg-[#222] border-2 border-[#333] p-2 text-sm text-[#999] outline-none" />
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">URL</label>
-            <input 
-              type="text" 
-              value={parameters.url || ''} 
-              onChange={(e) => updateNodeData(id, 'url', e.target.value)}
-              placeholder="https://api.example.com" 
-              className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Body (JSON)</label>
-            <textarea 
-              rows={4}
-              value={parameters.body || ''} 
-              onChange={(e) => updateNodeData(id, 'body', e.target.value)}
-              className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-            />
-          </div>
+
+          {type === 'HTTPRequest' && (
+            <>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Method</label>
+                <select 
+                  value={parameters.method || 'GET'} 
+                  onChange={(e) => updateNodeData(id, 'method', e.target.value)}
+                  className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono uppercase"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">URL</label>
+                <input 
+                  type="text" 
+                  value={parameters.url || ''} 
+                  onChange={(e) => updateNodeData(id, 'url', e.target.value)}
+                  placeholder="https://api.example.com" 
+                  className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Body (JSON)</label>
+                <textarea 
+                  rows={4}
+                  value={parameters.body || ''} 
+                  onChange={(e) => updateNodeData(id, 'body', e.target.value)}
+                  className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+                />
+              </div>
+            </>
+          )}
+
+          {type === 'IF' && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Condition Expression</label>
+              <input 
+                type="text" 
+                value={parameters.condition || ''} 
+                onChange={(e) => updateNodeData(id, 'condition', e.target.value)}
+                placeholder="{{ $json.status === 200 }}" 
+                className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+              />
+            </div>
+          )}
+
+          {type === 'Set' && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Value (JSON)</label>
+              <textarea 
+                rows={5}
+                value={parameters.value || ''} 
+                onChange={(e) => updateNodeData(id, 'value', e.target.value)}
+                placeholder='{"key": "value"}'
+                className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
+              />
+            </div>
+          )}
+
+          <button 
+            onClick={() => deleteNode(id)}
+            className="mt-8 px-4 py-2 border-2 border-[#ff4444] text-[#ff4444] font-bold text-sm tracking-widest hover:bg-[#ff4444] hover:text-[#161616] transition-all uppercase cursor-pointer"
+          >
+            DELETE NODE
+          </button>
         </>
       )}
-
-      {type === 'IF' && (
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Condition Expression</label>
-          <input 
-            type="text" 
-            value={parameters.condition || ''} 
-            onChange={(e) => updateNodeData(id, 'condition', e.target.value)}
-            placeholder="{{ $json.status === 200 }}" 
-            className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-          />
-        </div>
-      )}
-
-      {type === 'Set' && (
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Value (JSON)</label>
-          <textarea 
-            rows={5}
-            value={parameters.value || ''} 
-            onChange={(e) => updateNodeData(id, 'value', e.target.value)}
-            placeholder='{"key": "value"}'
-            className="bg-[#161616] border-2 border-[#e5e5e5] p-2 text-sm text-[#e5e5e5] outline-none font-mono" 
-          />
-        </div>
-      )}
-
-      <button 
-        onClick={() => deleteNode(id)}
-        className="mt-8 px-4 py-2 border-2 border-[#ff4444] text-[#ff4444] font-bold text-sm tracking-widest hover:bg-[#ff4444] hover:text-[#161616] transition-all uppercase cursor-pointer"
-      >
-        DELETE NODE
-      </button>
     </aside>
   );
 }
@@ -178,6 +211,11 @@ function FlowBuilder() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  
+  // Execution Viewer State
+  const [showExecutions, setShowExecutions] = useState(false);
+  const [executions, setExecutions] = useState<any[]>([]);
+  const [selectedExecution, setSelectedExecution] = useState<any | null>(null);
 
   // Load workflow on mount
   useEffect(() => {
@@ -191,7 +229,20 @@ function FlowBuilder() {
         }
       })
       .catch(err => console.error("Could not load workflow", err));
+      
+    // Fetch execution history
+    fetchExecutions();
   }, [setNodes, setEdges]);
+
+  const fetchExecutions = () => {
+    fetch(`/api/v1/workflows/${WORKFLOW_ID}/executions`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          setExecutions(data.data);
+        }
+      });
+  };
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -356,6 +407,18 @@ function FlowBuilder() {
         </div>
         
         <div className="ml-auto flex items-center gap-4">
+          <button
+            onClick={() => {
+              setShowExecutions(!showExecutions);
+              if (!showExecutions) fetchExecutions();
+              else setSelectedExecution(null);
+            }}
+            className={`px-4 py-1.5 border-2 text-xs font-bold tracking-widest uppercase transition-all ${showExecutions ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc] bg-opacity-10' : 'border-[#333] text-[#999] hover:text-[#e5e5e5] hover:bg-[#333]'}`}
+          >
+            {showExecutions ? 'Back to Editor' : 'Executions'}
+          </button>
+          <div className="w-px h-6 bg-[#333] mx-2"></div>
+          
           <input 
             type="file" 
             accept=".json" 
@@ -426,18 +489,62 @@ function FlowBuilder() {
       </header>
 
       <div className="flex flex-1 overflow-hidden relative bg-[#161616]">
-        <Sidebar />
+        {showExecutions ? (
+          <aside className="w-64 border-r-2 border-[#333] bg-[#161616] flex flex-col z-10 overflow-y-auto">
+            <div className="p-4 border-b-2 border-[#333]">
+              <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase text-sm">Execution History</h2>
+              <button onClick={fetchExecutions} className="mt-2 text-xs text-[#999] hover:text-[#fff] underline uppercase">Refresh</button>
+            </div>
+            <div className="flex flex-col">
+              {executions.map(exec => (
+                <div 
+                  key={exec.id} 
+                  onClick={() => setSelectedExecution(exec)}
+                  className={`p-4 border-b border-[#333] cursor-pointer hover:bg-[#222] transition-colors ${selectedExecution?.id === exec.id ? 'bg-[#222] border-l-4 border-l-[#00ffcc]' : ''}`}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <span className={`text-xs font-bold uppercase ${exec.status === 'success' ? 'text-[#00ffcc]' : exec.status === 'error' ? 'text-[#ff4444]' : 'text-[#ffcc00]'}`}>
+                      {exec.status}
+                    </span>
+                    <span className="text-[10px] text-[#666]">
+                      {exec.mode}
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#999]">
+                    {new Date(exec.startedAt).toLocaleString()}
+                  </div>
+                  {exec.stoppedAt && (
+                    <div className="text-[10px] text-[#666] mt-1">
+                      Duration: {new Date(exec.stoppedAt).getTime() - new Date(exec.startedAt).getTime()}ms
+                    </div>
+                  )}
+                </div>
+              ))}
+              {executions.length === 0 && (
+                <div className="p-4 text-center text-xs text-[#666]">No executions found</div>
+              )}
+            </div>
+          </aside>
+        ) : (
+          <Sidebar />
+        )}
         
         <main className="flex-1 h-full relative" ref={reactFlowWrapper}>
+          {showExecutions && selectedExecution && (
+             <div className="absolute top-4 left-4 z-50 bg-[#161616] border-2 border-[#00ffcc] p-2 text-xs font-bold text-[#00ffcc] uppercase shadow-lg shadow-black/50">
+               Viewing Execution: {selectedExecution.id.split('-')[1] || selectedExecution.id} <br/>
+               <span className="text-[#999] text-[10px]">Click any node to view output data</span>
+             </div>
+          )}
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+            onNodesChange={showExecutions ? undefined : onNodesChange}
+            onEdgesChange={showExecutions ? undefined : onEdgesChange}
+            onConnect={showExecutions ? undefined : onConnect}
             onInit={setReactFlowInstance}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
+            onDrop={showExecutions ? undefined : onDrop}
+            onDragOver={showExecutions ? undefined : onDragOver}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             fitView
@@ -453,7 +560,12 @@ function FlowBuilder() {
           </ReactFlow>
         </main>
         
-        <ConfigPanel selectedNode={selectedNode} updateNodeData={updateNodeData} deleteNode={deleteNode} />
+        <ConfigPanel 
+          selectedNode={selectedNode} 
+          updateNodeData={updateNodeData} 
+          deleteNode={deleteNode} 
+          executionData={showExecutions && selectedExecution ? selectedExecution.executionData : undefined}
+        />
       </div>
     </div>
   );

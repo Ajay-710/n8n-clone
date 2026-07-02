@@ -113,6 +113,28 @@ export class AppController {
     }
   }
 
+  @Get('workflows/:id/executions')
+  async getWorkflowExecutions(@Param('id') workflowId: string) {
+    try {
+      const workflow = await this.prisma.workflow.findUnique({
+        where: { id: workflowId },
+        include: { WorkflowVersion: true }
+      });
+      if (!workflow) return { status: 'error', message: 'Workflow not found' };
+
+      const versionIds = workflow.WorkflowVersion.map(v => v.id);
+      const executions = await this.prisma.execution.findMany({
+        where: { workflowVersionId: { in: versionIds } },
+        orderBy: { startedAt: 'desc' },
+        take: 50 // Limit to last 50 for the prototype
+      });
+
+      return { status: 'success', data: executions };
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
+  }
+
   @Post('workflows/:id/execute')
   async executeWorkflow(@Param('id') workflowId: string, @Body() body: any) {
     const { startingNodeId, mode = 'manual', nodes, connections } = body;
