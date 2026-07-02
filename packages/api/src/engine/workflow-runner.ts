@@ -9,6 +9,8 @@ export interface WorkflowNode {
 export interface WorkflowConnection {
   source: string;
   target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
 }
 
 export interface INodeExecutionData {
