@@ -289,8 +289,7 @@ function ConfigPanel({
   credentials: any[],
   onClose: () => void
 }) {
-  const [leftTab, setLeftTab] = useState<'parameters' | 'settings'>('parameters');
-  const [rightTab, setRightTab] = useState<'input' | 'output'>('output');
+  const [middleTab, setMiddleTab] = useState<'parameters' | 'settings'>('parameters');
 
   if (!selectedNode) return null;
 
@@ -325,21 +324,38 @@ function ConfigPanel({
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Pane - Config */}
-        <div className="w-1/2 border-r-2 border-[#333] flex flex-col">
-          <div className="flex border-b-2 border-[#333]">
+        {/* Left Pane - Input Data */}
+        <div className="w-[30%] border-r-2 border-[#333] flex flex-col bg-[#111]">
+          <div className="h-12 border-b-2 border-[#333] flex items-center px-4">
+            <span className="text-xs font-bold tracking-widest uppercase text-[#999]">Input</span>
+          </div>
+          <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center">
+            {/* Input is currently mocked since we don't track per-edge execution states in UI yet */}
+            <div className="text-center text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8 w-full">
+              No input data.<br/><br/>
+              <button className="px-4 py-2 mt-4 bg-[#ff6600] text-[#161616] font-bold border-2 border-[#ff6600] hover:bg-transparent hover:text-[#ff6600] transition-colors rounded-sm">Execute previous nodes</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Pane - Config */}
+        <div className="flex-1 border-r-2 border-[#333] flex flex-col">
+          <div className="flex h-12 border-b-2 border-[#333]">
             {['parameters', 'settings'].map(tab => (
               <button 
                 key={tab} 
-                onClick={() => setLeftTab(tab as any)}
-                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${leftTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc]/10' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
+                onClick={() => setMiddleTab(tab as any)}
+                className={`flex-1 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${middleTab === tab ? 'border-[#ff6600] text-[#ff6600] bg-[#ff6600]/10' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
               >
                 {tab}
               </button>
             ))}
+            <div className="px-4 flex items-center justify-center border-l-2 border-[#333]">
+              <button className="px-3 py-1 bg-[#ff6600] text-[#161616] font-bold text-xs uppercase hover:bg-[#cc5200] transition-colors rounded-sm">Execute Step</button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {leftTab === 'parameters' && (
+            {middleTab === 'parameters' && (
               <>
                 {type === 'HTTPRequest' && (
                   <>
@@ -473,23 +489,130 @@ function ConfigPanel({
                         value={parameters.model || ''} 
                         onChange={(e) => updateNodeData(id, 'model', e.target.value)}
                         placeholder="e.g. gpt-4 or claude-3-opus-20240229" 
-                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                       />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Prompt Expression</label>
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Messages / Prompt</label>
                       <textarea 
                         rows={6}
                         value={parameters.prompt || ''} 
                         onChange={(e) => updateNodeData(id, 'prompt', e.target.value)}
-                        placeholder="Summarize the previous data: {{$json.body}}"
-                        className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                        placeholder="System: You are an expert... \n\nUser: {{$json.body}}"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                       />
                     </div>
                   </>
                 )}
 
-                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent'].includes(type || '') && type !== 'StickyNode' && (
+                {type === 'Apify' && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Apify API Key Connection</label>
+                      <select 
+                        value={parameters.credentialId || ''} 
+                        onChange={(e) => updateNodeData(id, 'credentialId', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="">-- No Credential --</option>
+                        {credentials.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Resource</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="Actor">Actor</option>
+                        <option value="Task">Task</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Operation</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="Run">Run an Actor and Get Dataset</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Actor</label>
+                      <input 
+                        type="text" 
+                        value={parameters.actorId || ''} 
+                        onChange={(e) => updateNodeData(id, 'actorId', e.target.value)}
+                        placeholder="e.g. apify/instagram-scraper"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Input JSON</label>
+                      <textarea 
+                        rows={6}
+                        value={parameters.inputJson || ''} 
+                        onChange={(e) => updateNodeData(id, 'inputJson', e.target.value)}
+                        placeholder="{\n  \"urls\": [\"{{ $json.url }}\"]\n}"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Memory</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="1024">1024 MB (1 GB)</option>
+                        <option value="2048">2048 MB (2 GB)</option>
+                        <option value="4096">4096 MB (4 GB)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {type === 'GoogleSheets' && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Credential</label>
+                      <select 
+                        value={parameters.credentialId || ''} 
+                        onChange={(e) => updateNodeData(id, 'credentialId', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="">-- No Credential --</option>
+                        {credentials.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Resource</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="Sheet">Sheet Within Document</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Operation</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="Get">Get Row(s)</option>
+                        <option value="Append">Append Row(s)</option>
+                        <option value="Update">Update Row(s)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Document (ID)</label>
+                      <input 
+                        type="text" 
+                        value={parameters.documentId || ''} 
+                        onChange={(e) => updateNodeData(id, 'documentId', e.target.value)}
+                        placeholder="1BxiMVs0XRYFgwn..."
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Sheet (Name)</label>
+                      <input 
+                        type="text" 
+                        value={parameters.sheetName || ''} 
+                        onChange={(e) => updateNodeData(id, 'sheetName', e.target.value)}
+                        placeholder="Sheet1"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent', 'Anthropic', 'Apify', 'GoogleSheets'].includes(type || '') && type !== 'StickyNode' && (
                   <div className="flex flex-col gap-2 h-full">
                     <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Raw Parameters (JSON)</label>
                     <textarea 
@@ -498,11 +621,10 @@ function ConfigPanel({
                       onChange={(e) => {
                         try {
                           const parsed = JSON.parse(e.target.value);
-                          // A bit hacky: we should probably have a bulk update method, but this works for simple edits
                           Object.keys(parsed).forEach(k => updateNodeData(id, k, parsed[k]));
                         } catch(err) {}
                       }}
-                      className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors h-full min-h-[300px]" 
+                      className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors h-full min-h-[300px]" 
                     />
                     <span className="text-[10px] text-[#999] mt-1">This node type does not have a dedicated UI. Edit the raw parameters here.</span>
                   </div>
@@ -510,18 +632,18 @@ function ConfigPanel({
               </>
             )}
 
-            {leftTab === 'settings' && (
+            {middleTab === 'settings' && (
               <div className="space-y-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Node Name</label>
-                  <input type="text" value={data.label} onChange={(e) => updateNodeData(id, 'label', e.target.value)} className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none transition-colors" />
+                  <input type="text" value={data.label} onChange={(e) => updateNodeData(id, 'label', e.target.value)} className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none transition-colors" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Notes</label>
-                  <textarea rows={4} className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none transition-colors" placeholder="Add notes here to document this node's purpose..." />
+                  <textarea rows={4} className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none transition-colors" placeholder="Add notes here to document this node's purpose..." />
                 </div>
                 <div className="flex items-center gap-2 mt-4 p-4 border-2 border-[#333] bg-[#222]">
-                  <input type="checkbox" className="w-4 h-4 bg-[#161616] border-2 border-[#333] accent-[#00ffcc]" />
+                  <input type="checkbox" className="w-4 h-4 bg-[#161616] border-2 border-[#333] accent-[#ff6600]" />
                   <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Continue On Fail</label>
                 </div>
               </div>
@@ -529,47 +651,31 @@ function ConfigPanel({
           </div>
         </div>
 
-        {/* Right Pane - Execution Data */}
-        <div className="w-1/2 flex flex-col bg-[#111]">
-          <div className="flex border-b-2 border-[#333] bg-[#161616]">
-            {['input', 'output'].map(tab => (
-              <button 
-                key={tab} 
-                onClick={() => setRightTab(tab as any)}
-                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${rightTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc]/10' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
-              >
-                {tab}
-              </button>
-            ))}
+        {/* Right Pane - Output Data */}
+        <div className="w-[30%] flex flex-col bg-[#111]">
+          <div className="h-12 border-b-2 border-[#333] bg-[#161616] flex items-center px-4">
+            <span className="text-xs font-bold tracking-widest uppercase text-[#999]">Output</span>
           </div>
-          <div className="flex-1 overflow-auto p-6 flex flex-col">
-            {rightTab === 'input' && (
-              <div className="text-center mt-20 text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8">
-                Input data will be displayed here.<br/><br/>
-                Execute previous nodes to see data flowing into this node.
-              </div>
-            )}
-            {rightTab === 'output' && (
-              <div className="flex flex-col h-full gap-4">
-                {outputData ? (
-                  <>
-                    <div className="flex items-center gap-4 text-[10px] uppercase font-bold text-[#00ffcc] tracking-widest border border-[#333] p-2 bg-[#161616]">
-                      <span>Items: {Array.isArray(outputData) ? outputData.length : 1}</span>
-                      <span className="w-px h-3 bg-[#333]"></span>
-                      <span>JSON Mode</span>
-                    </div>
-                    <div className="flex-1 bg-[#161616] border-2 border-[#333] p-4 overflow-auto text-xs text-[#e5e5e5] font-mono whitespace-pre-wrap selection:bg-[#00ffcc] selection:text-[#161616]">
-                      {JSON.stringify(Array.isArray(outputData) ? outputData.map((d: any) => d.json) : outputData.json, null, 2)}
-                    </div>
-                  </>
-                ) : (
-                   <div className="text-center mt-20 text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8">
-                     No output data available.<br/><br/>
-                     Run this node to generate output.
-                   </div>
-                )}
-              </div>
-            )}
+          <div className="flex-1 overflow-auto p-4 flex flex-col">
+            <div className="flex flex-col h-full gap-4">
+              {outputData ? (
+                <>
+                  <div className="flex items-center gap-4 text-[10px] uppercase font-bold text-[#ff6600] tracking-widest border border-[#333] p-2 bg-[#161616]">
+                    <span>Items: {Array.isArray(outputData) ? outputData.length : 1}</span>
+                    <span className="w-px h-3 bg-[#333]"></span>
+                    <span>JSON Mode</span>
+                  </div>
+                  <div className="flex-1 bg-[#161616] border-2 border-[#333] p-4 overflow-auto text-xs text-[#e5e5e5] font-mono whitespace-pre-wrap selection:bg-[#ff6600] selection:text-[#161616]">
+                    {JSON.stringify(Array.isArray(outputData) ? outputData.map((d: any) => d.json) : outputData.json, null, 2)}
+                  </div>
+                </>
+              ) : (
+                 <div className="text-center mt-20 text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8">
+                   No output data.<br/><br/>
+                   <button className="px-4 py-2 mt-4 bg-[#ff6600] text-[#161616] font-bold border-2 border-[#ff6600] hover:bg-transparent hover:text-[#ff6600] transition-colors rounded-sm">Execute node</button>
+                 </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
