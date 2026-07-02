@@ -62,7 +62,7 @@ export class ExecutionProcessor extends WorkerHost {
           where: { id: executionId },
           data: { 
             status: 'success', 
-            executionData: finalState,
+            executionData: finalState as any,
             stoppedAt: new Date() 
           },
         });
