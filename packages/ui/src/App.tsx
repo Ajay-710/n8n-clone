@@ -12,12 +12,17 @@ import ReactFlow, {
 import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
 import CustomNode from './components/CustomNode';
 import StickyNode from './components/StickyNode';
+import CustomEdge from './components/CustomEdge';
 import CredentialsManager from './components/CredentialsManager';
 import 'reactflow/dist/style.css';
 
 const nodeTypes = {
   default: CustomNode,
   StickyNode: StickyNode
+};
+
+const edgeTypes = {
+  default: CustomEdge
 };
 
 const initialNodes: Node[] = [];
@@ -559,6 +564,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
 
   // Node Picker State
   const [isNodePickerOpen, setIsNodePickerOpen] = useState(false);
+  const [insertEdgeTarget, setInsertEdgeTarget] = useState<{edgeId: string, x: number, y: number} | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -567,8 +573,16 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
         setIsNodePickerOpen(prev => !prev);
       }
     };
+    const handleInsert = (e: any) => {
+      setInsertEdgeTarget(e.detail);
+      setIsNodePickerOpen(true);
+    };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('n7n-insert-node', handleInsert);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('n7n-insert-node', handleInsert);
+    };
   }, []);
 
   useEffect(() => {
@@ -686,15 +700,34 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
   }, []);
 
   const onAddNode = useCallback((type: string, label: string) => {
-    const position = reactFlowInstance ? reactFlowInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 }) : { x: 100, y: 100 };
+    let position = reactFlowInstance ? reactFlowInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 }) : { x: 100, y: 100 };
+    
+    if (insertEdgeTarget) {
+      position = { x: insertEdgeTarget.x - 75, y: insertEdgeTarget.y - 25 };
+    }
+
     const newNode: Node = {
       id: getId(),
       type: type === 'StickyNode' ? 'StickyNode' : 'default',
       position,
       data: { label, type, parameters: {} },
     };
+    
     setNodes((nds) => nds.concat(newNode));
-  }, [reactFlowInstance, setNodes]);
+
+    if (insertEdgeTarget) {
+      setEdges((eds) => {
+        const edgeToSplit = eds.find(e => e.id === insertEdgeTarget.edgeId);
+        if (!edgeToSplit) return eds;
+        return [
+          ...eds.filter(e => e.id !== insertEdgeTarget.edgeId),
+          { id: `e-${edgeToSplit.source}-${newNode.id}`, source: edgeToSplit.source, target: newNode.id },
+          { id: `e-${newNode.id}-${edgeToSplit.target}`, source: newNode.id, target: edgeToSplit.target }
+        ];
+      });
+      setInsertEdgeTarget(null);
+    }
+  }, [reactFlowInstance, setNodes, setEdges, insertEdgeTarget]);
 
   const updateNodeData = useCallback((id: string, key: string, value: any) => {
     setNodes((nds) =>
@@ -1023,6 +1056,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onNodesChange={showExecutions ? undefined : onNodesChange}
             onEdgesChange={showExecutions ? undefined : onEdgesChange}
             onConnect={showExecutions ? undefined : onConnect}
