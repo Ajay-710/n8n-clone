@@ -16,7 +16,8 @@ export class WorkflowRunner {
   
   constructor(
     private nodes: WorkflowNode[],
-    private connections: WorkflowConnection[]
+    private connections: WorkflowConnection[],
+    private onEvent?: (type: string, data: any) => void
   ) {}
 
   /**
@@ -28,18 +29,30 @@ export class WorkflowRunner {
 
     console.log(`[Engine] Starting execution at node: ${node.type} (${node.id})`);
     
-    // Process current node
-    const result = await this.executeNode(node);
+    this.onEvent?.('node.started', { nodeId: node.id });
     
-    // Save output data for future nodes to reference via {{$node["Id"].json}}
-    this.executionData[node.id] = { json: result };
+    // Artificial delay for UI visual feedback during rapid execution
+    await new Promise(r => setTimeout(r, 600));
 
-    // Find next nodes in the DAG
-    const nextConnections = this.connections.filter(c => c.source === node.id);
-    
-    for (const conn of nextConnections) {
-      console.log(`[Engine] Transitioning from ${node.id} -> ${conn.target}`);
-      await this.execute(conn.target);
+    try {
+      // Process current node
+      const result = await this.executeNode(node);
+      
+      // Save output data for future nodes to reference via {{$node["Id"].json}}
+      this.executionData[node.id] = { json: result };
+      
+      this.onEvent?.('node.completed', { nodeId: node.id, output: result });
+
+      // Find next nodes in the DAG
+      const nextConnections = this.connections.filter(c => c.source === node.id);
+      
+      for (const conn of nextConnections) {
+        console.log(`[Engine] Transitioning from ${node.id} -> ${conn.target}`);
+        await this.execute(conn.target);
+      }
+    } catch (error: any) {
+      this.onEvent?.('node.failed', { nodeId: node.id, error: error.message });
+      throw error;
     }
 
     return this.executionData;

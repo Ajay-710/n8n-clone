@@ -1,11 +1,15 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkflowRunner } from './workflow-runner';
 import { PrismaService } from '../prisma.service';
 
 @Processor('workflow-executions')
 export class ExecutionProcessor extends WorkerHost {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2
+  ) {
     super();
   }
 
@@ -25,7 +29,9 @@ export class ExecutionProcessor extends WorkerHost {
       }
 
       // Initialize the engine
-      const runner = new WorkflowRunner(nodes, connections);
+      const runner = new WorkflowRunner(nodes, connections, (type, payload) => {
+        this.eventEmitter.emit('execution.event', { type, executionId, ...payload });
+      });
       
       // Execute the DAG
       const finalState = await runner.execute(startingNodeId);

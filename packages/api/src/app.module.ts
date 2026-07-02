@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { join } from 'path';
 import { AppController } from './app.controller';
+import { EventsController } from './events.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { ExecutionProcessor } from './engine/execution.processor';
@@ -19,6 +21,7 @@ const redisConnection: any = process.env.REDIS_URL
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'ui', 'dist'),
       exclude: ['/api/(.*)'],
@@ -30,7 +33,7 @@ const redisConnection: any = process.env.REDIS_URL
       name: 'workflow-executions',
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, EventsController],
   providers: [
     AppService, 
     PrismaService, 

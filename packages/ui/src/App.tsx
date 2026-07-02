@@ -292,6 +292,28 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
   const [showExecutions, setShowExecutions] = useState(false);
   const [executions, setExecutions] = useState<any[]>([]);
   const [selectedExecution, setSelectedExecution] = useState<any | null>(null);
+  
+  // Real-time execution tracking
+  const [isExecuteMenuOpen, setIsExecuteMenuOpen] = useState(false);
+  const [executionMode, setExecutionMode] = useState<'idle' | 'waiting' | 'running'>('idle');
+
+  useEffect(() => {
+    const sse = new EventSource('/api/v1/events/executions');
+    sse.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.type === 'node.started') {
+          setExecutionMode('running');
+          setNodes(nds => nds.map(n => n.id === payload.nodeId ? { ...n, className: '!border-[#3399ff] !bg-[#112233] shadow-[0_0_15px_rgba(51,153,255,0.4)]' } : n));
+        } else if (payload.type === 'node.completed') {
+          setNodes(nds => nds.map(n => n.id === payload.nodeId ? { ...n, className: '!border-[#00ffcc] !bg-[#003322] shadow-[0_0_15px_rgba(0,255,204,0.4)]' } : n));
+        } else if (payload.type === 'node.failed') {
+          setNodes(nds => nds.map(n => n.id === payload.nodeId ? { ...n, className: '!border-[#ff4444] !bg-[#331111] shadow-[0_0_15px_rgba(255,68,68,0.4)]' } : n));
+        }
+      } catch (err) {}
+    };
+    return () => sse.close();
+  }, [setNodes]);
 
   // Load workflow on mount
   useEffect(() => {
@@ -543,44 +565,85 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
             SAVE
           </button>
 
-          <button 
-            onClick={async () => {
-              try {
-                const engineNodes = nodes.map(n => ({
-                  id: n.id,
-                  type: n.data.type || n.data.label.replace(/\s+/g, ''),
-                  parameters: n.data.parameters || {}
-                }));
-                const engineConnections = edges.map(e => ({
-                  source: e.source,
-                  target: e.target
-                }));
+          <div className="relative flex items-center ml-4">
+            <button 
+              onClick={async () => {
+                try {
+                  // Reset previous highlights
+                  setNodes(nds => nds.map(n => ({ ...n, className: '' })));
+                  
+                  const engineNodes = nodes.map(n => ({
+                    id: n.id,
+                    type: n.data.type || n.data.label.replace(/\s+/g, ''),
+                    parameters: n.data.parameters || {}
+                  }));
+                  const engineConnections = edges.map(e => ({
+                    source: e.source,
+                    target: e.target
+                  }));
 
-                const triggerNode = engineNodes.find(n => n.type === 'Webhook');
-                const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
+                  const triggerNode = engineNodes.find(n => n.type === 'Webhook');
+                  const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
 
-                if (!startId) return alert('Add nodes to execute');
+                  if (!startId) return alert('Add nodes to execute');
 
-                const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    startingNodeId: startId, 
-                    mode: 'manual',
-                    nodes: engineNodes,
-                    connections: engineConnections
-                  })
-                });
-                const data = await res.json();
-                alert(`Execution started! Job ID: ${data.executionId}\nStatus: ${data.status}`);
-              } catch (e: any) {
-                alert(`Execution failed: ${e.message}`);
-              }
-            }}
-            className="px-4 py-1.5 border-2 border-[#e5e5e5] bg-[#e5e5e5] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#e5e5e5] transition-all uppercase cursor-pointer"
-          >
-            EXECUTE
-          </button>
+                  setExecutionMode('running');
+                  const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      startingNodeId: startId, 
+                      mode: 'manual',
+                      nodes: engineNodes,
+                      connections: engineConnections
+                    })
+                  });
+                  const data = await res.json();
+                  if (data.status !== 'success') {
+                    alert(`Execution failed: ${data.message || 'Unknown error'}`);
+                    setExecutionMode('idle');
+                  }
+                } catch (e: any) {
+                  alert(`Execution failed: ${e.message}`);
+                  setExecutionMode('idle');
+                }
+              }}
+              className="px-4 py-1.5 border-2 border-r-0 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#00ffcc] transition-all uppercase cursor-pointer"
+            >
+              EXECUTE
+            </button>
+            <button 
+              onClick={() => setIsExecuteMenuOpen(!isExecuteMenuOpen)}
+              className="px-2 py-1.5 border-2 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm hover:bg-[#161616] hover:text-[#00ffcc] transition-all cursor-pointer"
+            >
+              ▼
+            </button>
+            
+            {isExecuteMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-[#161616] border-2 border-[#333] shadow-lg shadow-black/50 flex flex-col z-50">
+                <button 
+                  onClick={() => {
+                    setIsExecuteMenuOpen(false);
+                    // Same as manual execute
+                    document.querySelector<HTMLButtonElement>('.border-r-0')?.click();
+                  }}
+                  className="p-3 text-left text-xs font-bold text-[#e5e5e5] hover:bg-[#333] transition-colors uppercase tracking-wider border-b border-[#333]"
+                >
+                  Manual Trigger
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsExecuteMenuOpen(false);
+                    setExecutionMode('waiting');
+                    alert(`Listening for webhook requests at: \n\nPOST /api/v1/webhook/${workflowId}`);
+                  }}
+                  className="p-3 text-left text-xs font-bold text-[#e5e5e5] hover:bg-[#333] transition-colors uppercase tracking-wider"
+                >
+                  Listen for Webhook
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
