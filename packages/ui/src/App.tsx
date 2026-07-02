@@ -672,7 +672,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
     [reactFlowInstance, setNodes],
   );
 
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback(() => {
     // Single click selects the node natively in ReactFlow, we do NOT open the config panel here.
   }, []);
 
@@ -1030,7 +1030,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
             onDrop={showExecutions ? undefined : onDrop}
             onDragOver={showExecutions ? undefined : onDragOver}
             onNodeClick={onNodeClick}
-            onNodeDoubleClick={(e, node) => setSelectedNodeId(node.id)}
+            onNodeDoubleClick={(_, node) => setSelectedNodeId(node.id)}
             onEdgeDoubleClick={(e, edge) => { e.preventDefault(); setEdges(eds => eds.filter(ed => ed.id !== edge.id)); }}
             onPaneClick={onPaneClick}
             onPaneContextMenu={onPaneContextMenu}
