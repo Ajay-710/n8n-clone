@@ -620,7 +620,105 @@ function ConfigPanel({
                   </>
                 )}
 
-                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent', 'Anthropic', 'Apify', 'GoogleSheets'].includes(type || '') && type !== 'StickyNode' && (
+                {type === 'Slack' && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Credential</label>
+                      <select 
+                        value={parameters.credentialId || ''} 
+                        onChange={(e) => updateNodeData(id, 'credentialId', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="">-- No Credential --</option>
+                        {credentials.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Resource</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="Message">Message</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Operation</label>
+                      <select className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors">
+                        <option value="Post">Post Message</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Channel</label>
+                      <input 
+                        type="text" 
+                        value={parameters.channel || ''} 
+                        onChange={(e) => updateNodeData(id, 'channel', e.target.value)}
+                        placeholder="#general"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Message Text</label>
+                      <textarea 
+                        rows={6}
+                        value={parameters.text || ''} 
+                        onChange={(e) => updateNodeData(id, 'text', e.target.value)}
+                        placeholder="Hello team! {{ $json.message }}"
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                      />
+                    </div>
+                  </>
+                )}
+
+                {type === 'Postgres' && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Credential</label>
+                      <select 
+                        value={parameters.credentialId || ''} 
+                        onChange={(e) => updateNodeData(id, 'credentialId', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="">-- No Credential --</option>
+                        {credentials.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Operation</label>
+                      <select 
+                        value={parameters.operation || 'ExecuteQuery'}
+                        onChange={(e) => updateNodeData(id, 'operation', e.target.value)}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                      >
+                        <option value="ExecuteQuery">Execute Query</option>
+                        <option value="Insert">Insert</option>
+                        <option value="Update">Update</option>
+                      </select>
+                    </div>
+                    {(parameters.operation === 'Insert' || parameters.operation === 'Update') && (
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Table</label>
+                        <input 
+                          type="text" 
+                          value={parameters.table || ''} 
+                          onChange={(e) => updateNodeData(id, 'table', e.target.value)}
+                          placeholder="users"
+                          className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors"
+                        />
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Query / Data</label>
+                      <textarea 
+                        rows={6}
+                        value={parameters.query || ''} 
+                        onChange={(e) => updateNodeData(id, 'query', e.target.value)}
+                        placeholder={parameters.operation === 'ExecuteQuery' ? "SELECT * FROM users;" : '{"name": "{{$json.name}}"}'}
+                        className="bg-[#161616] border-2 border-[#333] focus:border-[#ff6600] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
+                      />
+                    </div>
+                  </>
+                )}
+
+                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent', 'Anthropic', 'Apify', 'GoogleSheets', 'Slack', 'Postgres'].includes(type || '') && type !== 'StickyNode' && (
                   <div className="flex flex-col gap-2 h-full">
                     <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Raw Parameters (JSON)</label>
                     <textarea 

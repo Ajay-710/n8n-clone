@@ -7,7 +7,7 @@
 | Rename Workflow | PASS | Recently fixed (inline editing). |
 | Save Workflow | PASS | Saves nodes & edges manually. |
 | Auto Save | NOT_IMPLEMENTED | Missing auto-save functionality. |
-| Delete Workflow | PARTIAL | Backend deletes it, but UI doesn't immediately remove it from dashboard view until refresh. |
+| Delete Workflow | PASS | Dashboard now immediately refreshes and errors are caught. |
 | Duplicate Workflow | NOT_IMPLEMENTED | No duplicate/clone button. |
 | Import Workflow | PASS | `App.tsx` imports n8n compatible JSON. |
 | Export Workflow | PASS | Exports to JSON. |
@@ -53,7 +53,7 @@
 | Manual Execution | PASS | Execute Workflow triggers backend. |
 | Webhook Execution | PASS | `app.controller.ts` supports GET/POST. |
 | Cron Execution | NOT_IMPLEMENTED | The Schedule node doesn't have a backend scheduler. |
-| Execute Node (Step) | NOT_IMPLEMENTED | UI has "Execute Step" button but it's completely dead/no logic attached in `ConfigPanel`. |
+| Execute Node (Step) | PASS | UI triggers single-step execution and runner traces BFS back upwards. |
 | Resume / Cancel | PARTIAL | UI has Stop Workflow, but backend might not interrupt running jobs gracefully. |
 | Partial Execution | FAIL | Executing a sub-branch is not implemented. |
 
