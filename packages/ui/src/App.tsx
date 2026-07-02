@@ -219,6 +219,7 @@ function ConfigPanel({
   updateNodeData, 
   deleteNode,
   executionData,
+  credentials,
   onClose
 }: { 
   selectedNode: Node | null, 
