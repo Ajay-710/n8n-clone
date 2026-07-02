@@ -251,10 +251,16 @@ function Dashboard({ onOpenWorkflow }: { onOpenWorkflow: (id: string) => void })
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (!window.confirm('Delete this workflow?')) return;
-                  await fetch(`/api/v1/workflows/${wf.id}`, { method: 'DELETE' });
+                  const res = await fetch(`/api/v1/workflows/${wf.id}`, { method: 'DELETE' });
+                  const resData = await res.json();
+                  if (resData.status === 'error') {
+                    alert(`Failed to delete: ${resData.message}`);
+                  }
                   // Re-fetch
-                  fetch('/api/v1/workflows').then(res => res.json()).then(data => {
-                    if (data.status === 'success') setWorkflows(data.data);
+                  fetch('/api/v1/workflows').then(r => r.json()).then(data => {
+                    if (data.status === 'success' || data.status === 'mock_fallback') {
+                      setWorkflows(data.data);
+                    }
                   });
                 }}
                 className="px-3 py-1.5 border border-[#ff4444] text-[#ff4444] text-xs font-bold uppercase tracking-widest hover:bg-[#ff4444] hover:text-[#161616] transition-colors"
