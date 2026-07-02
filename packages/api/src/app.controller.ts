@@ -101,11 +101,15 @@ export class AppController {
     try {
       const { nodes, connections } = body;
       
-      // We just push a new version for simplicity
+      const latestVersion = await this.prisma.workflowVersion.findFirst({
+        where: { workflowId },
+        orderBy: { version: 'desc' }
+      });
+      
       const newVersion = await this.prisma.workflowVersion.create({
         data: {
           workflowId,
-          version: Date.now(), // simple auto-increment for prototype
+          version: latestVersion ? latestVersion.version + 1 : 1,
           nodes,
           connections
         }
