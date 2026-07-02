@@ -46,7 +46,7 @@ export class WorkflowRunner {
   }
 
   private async executeNode(node: WorkflowNode): Promise<any> {
-    const { NodeRegistry } = await import('./node-registry');
+    const { NodeRegistry } = await import('./node-registry.js');
 
     // Context available for this node's expressions
     const context = {

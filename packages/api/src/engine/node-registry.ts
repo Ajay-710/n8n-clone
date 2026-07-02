@@ -102,7 +102,7 @@ NodeRegistry.registerNode({
     
     if (!url) throw new Error('HTTP Request requires a URL');
 
-    let body = undefined;
+    let body: string | undefined = undefined;
     if (['POST', 'PUT', 'PATCH'].includes(method) && node.parameters.body) {
       try {
         body = typeof node.parameters.body === 'string' ? node.parameters.body : JSON.stringify(node.parameters.body);
