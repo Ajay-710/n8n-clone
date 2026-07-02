@@ -81,8 +81,7 @@ export class WorkflowRunner {
         // Fetch connected tools from the DAG (nodes pointing to this agent with type 'Tool')
         const toolConnections = this.connections.filter(c => c.target === node.id);
         const toolNodes = toolConnections.map(c => this.nodes.find(n => n.id === c.source && n.type === 'Tool')).filter(Boolean);
-        
-        const { AgentExecutor } = await import('./ai-agent');
+        const { AgentExecutor } = await import('./ai-agent.js');
         const executor = new AgentExecutor(
           resolvedParams.provider || 'openai',
           resolvedParams.model || 'gpt-4',
