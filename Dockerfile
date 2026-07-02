@@ -1,5 +1,4 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -19,19 +18,6 @@ RUN cd packages/api && npx prisma generate
 
 # Build UI and API
 RUN npm run build
-
-# Production stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Copy built assets and necessary files from builder
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/api/package*.json ./packages/api/
-COPY --from=builder /app/packages/api/dist ./packages/api/dist
-COPY --from=builder /app/packages/api/node_modules ./packages/api/node_modules
-COPY --from=builder /app/packages/ui/dist ./packages/ui/dist
 
 # Expose port (Railway dynamic port injection)
 ENV PORT=3000
