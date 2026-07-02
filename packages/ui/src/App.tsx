@@ -125,7 +125,10 @@ function Dashboard({ onOpenWorkflow }: { onOpenWorkflow: (id: string) => void })
     <div className="flex-1 bg-[#161616] p-8 overflow-y-auto text-[#e5e5e5] font-mono h-full">
       <div className="flex justify-between items-center mb-12 border-b-2 border-[#333] pb-4">
         <h1 className="text-3xl font-bold tracking-widest uppercase text-[#e5e5e5]">Workflows</h1>
-        <button className="px-4 py-2 border-2 border-[#e5e5e5] bg-[#e5e5e5] text-[#161616] font-bold uppercase tracking-widest hover:bg-[#161616] hover:text-[#e5e5e5] transition-colors cursor-pointer">
+        <button 
+          onClick={() => onOpenWorkflow(`workflow_${Date.now()}`)}
+          className="px-4 py-2 border-2 border-[#e5e5e5] bg-[#e5e5e5] text-[#161616] font-bold uppercase tracking-widest hover:bg-[#161616] hover:text-[#e5e5e5] transition-colors cursor-pointer"
+        >
           + New Workflow
         </button>
       </div>
