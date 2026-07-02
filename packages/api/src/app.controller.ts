@@ -13,8 +13,28 @@ export class AppController {
   ) {}
 
   @Get('health')
-  getHealth(): string {
-    return 'Enterprise Orchestrator API is running';
+  async getHealth() {
+    try {
+      // Verify PostgreSQL
+      await this.prisma.$queryRawUnsafe('SELECT 1');
+      
+      // Verify Redis/BullMQ
+      const redisClient = await this.executionQueue.client;
+      await redisClient.ping();
+
+      return { 
+        status: 'ok', 
+        database: 'connected', 
+        redis: 'connected',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error: any) {
+      return { 
+        status: 'error', 
+        message: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 
   @Get('workflows')

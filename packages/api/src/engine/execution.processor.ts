@@ -15,11 +15,14 @@ export class ExecutionProcessor extends WorkerHost {
     console.log(`[BullMQ Worker] Picked up execution job ${executionId}`);
     
     try {
-      // Update execution status to running in DB
-      await this.prisma.execution.update({
-        where: { id: executionId },
-        data: { status: 'running', startedAt: new Date() },
-      });
+      // Safely update execution status if it exists in DB
+      const executionExists = await this.prisma.execution.findUnique({ where: { id: executionId } });
+      if (executionExists) {
+        await this.prisma.execution.update({
+          where: { id: executionId },
+          data: { status: 'running', startedAt: new Date() },
+        });
+      }
 
       // Initialize the engine
       const runner = new WorkflowRunner(nodes, connections);
@@ -28,30 +31,35 @@ export class ExecutionProcessor extends WorkerHost {
       const finalState = await runner.execute(startingNodeId);
       
       // Mark as success
-      await this.prisma.execution.update({
-        where: { id: executionId },
-        data: { 
-          status: 'success', 
-          executionData: finalState,
-          stoppedAt: new Date() 
-        },
-      });
+      if (executionExists) {
+        await this.prisma.execution.update({
+          where: { id: executionId },
+          data: { 
+            status: 'success', 
+            executionData: finalState,
+            stoppedAt: new Date() 
+          },
+        });
+      }
       
       console.log(`[BullMQ Worker] Execution ${executionId} completed successfully.`);
       return finalState;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[BullMQ Worker] Execution ${executionId} failed:`, error.message);
       
       // Mark as failed
-      await this.prisma.execution.update({
-        where: { id: executionId },
-        data: { 
-          status: 'failed', 
-          executionData: { error: error.message },
-          stoppedAt: new Date() 
-        },
-      });
+      const executionExists = await this.prisma.execution.findUnique({ where: { id: executionId } });
+      if (executionExists) {
+        await this.prisma.execution.update({
+          where: { id: executionId },
+          data: { 
+            status: 'failed', 
+            executionData: { error: error.message },
+            stoppedAt: new Date() 
+          },
+        });
+      }
       
       throw error;
     }
