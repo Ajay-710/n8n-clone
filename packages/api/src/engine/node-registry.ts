@@ -97,7 +97,7 @@ NodeRegistry.registerNode({
 NodeRegistry.registerNode({
   type: 'HTTPRequest',
   category: 'action',
-  execute: async (node) => {
+  execute: async (node, context) => {
     const method = node.parameters.method || 'GET';
     const url = node.parameters.url;
     
