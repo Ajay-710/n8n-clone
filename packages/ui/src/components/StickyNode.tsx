@@ -1,5 +1,4 @@
-import React from 'react';
-import { NodeProps } from 'reactflow';
+import type { NodeProps } from 'reactflow';
 
 export default function StickyNode({ data, selected }: NodeProps) {
   return (
