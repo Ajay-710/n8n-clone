@@ -98,8 +98,7 @@
 ## Phase 14: AI Integrations
 | Feature | Status | Notes |
 |---------|--------|-------|
-| OpenAI / Anthropic Nodes | PARTIAL | Config exists, but backend runner for OpenAI/Anthropic doesn't actually call LLM APIs dynamically via proper tools (or relies entirely on raw NodeRegistry implementations which may be missing). |
+| OpenAI / Anthropic Nodes | PASS | Backend runner seamlessly integrates with ConfigPanel Credential Vault to inject keys and dynamically execute logic via native fetch wrappers in `AgentExecutor`. |
 
 ## Next Steps for Remediation
-1. **Expression Evaluation UI** (Show preview of `{{$json}}` in ConfigPanel).
-2. **AI Node Backend Implementation** (Actually hook up Anthropic / OpenAI logic into `workflow-runner.ts`).
+- Feature parity reached for core MVP functional scenarios! All prioritized mechanics (webhooks, execution viewers, credentials, single node testing, expressions, AI) are now operational.
