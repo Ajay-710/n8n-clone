@@ -687,6 +687,8 @@ function ConfigPanel({
 function FlowBuilder({ workflowId }: { workflowId: string }) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [workflowName, setWorkflowName] = useState('My Workflow');
+  const [isEditingName, setIsEditingName] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -1003,7 +1005,26 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden text-[#e5e5e5] font-mono relative">
       <header className="h-16 border-b-2 border-[#333] flex items-center px-6 bg-[#161616] z-10 shrink-0">
-        <h2 className="font-bold text-[#e5e5e5] tracking-widest uppercase">Editor</h2>
+        {isEditingName ? (
+           <input 
+             type="text" 
+             value={workflowName} 
+             onChange={(e) => setWorkflowName(e.target.value)}
+             onBlur={() => setIsEditingName(false)}
+             onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
+             autoFocus
+             className="font-bold text-[#e5e5e5] tracking-widest uppercase bg-transparent border-b-2 border-[#ff6600] outline-none"
+           />
+        ) : (
+           <h2 
+             onClick={() => setIsEditingName(true)}
+             className="font-bold text-[#e5e5e5] tracking-widest uppercase cursor-text hover:text-[#ff6600] transition-colors flex items-center gap-2"
+             title="Click to edit workflow name"
+           >
+             {workflowName}
+             <svg className="w-4 h-4 text-[#666]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+           </h2>
+        )}
         
         {executionMode !== 'idle' && (
           <div className="ml-4 px-2 py-1 bg-[#222] border border-[#333] text-[10px] text-[#00ffcc] uppercase font-bold tracking-widest animate-pulse">
