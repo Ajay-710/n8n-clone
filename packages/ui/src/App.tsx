@@ -572,58 +572,76 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
           </button>
 
           <div className="relative flex items-center ml-4">
-            <button 
-              onClick={async () => {
-                try {
-                  // Reset previous highlights
-                  setNodes(nds => nds.map(n => ({ ...n, className: '' })));
-                  
-                  const engineNodes = nodes.map(n => ({
-                    id: n.id,
-                    type: n.data.type || n.data.label.replace(/\s+/g, ''),
-                    parameters: n.data.parameters || {}
-                  }));
-                  const engineConnections = edges.map(e => ({
-                    source: e.source,
-                    target: e.target
-                  }));
-
-                  const triggerNode = engineNodes.find(n => n.type === 'Webhook');
-                  const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
-
-                  if (!startId) return alert('Add nodes to execute');
-
-                  setExecutionMode('running');
-                  const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      startingNodeId: startId, 
-                      mode: 'manual',
-                      nodes: engineNodes,
-                      connections: engineConnections
-                    })
-                  });
-                  const data = await res.json();
-                  if (data.status !== 'success') {
-                    alert(`Execution failed: ${data.message || 'Unknown error'}`);
-                    setExecutionMode('idle');
-                  }
-                } catch (e: any) {
-                  alert(`Execution failed: ${e.message}`);
+            {executionMode !== 'idle' ? (
+              <button 
+                onClick={() => {
                   setExecutionMode('idle');
-                }
-              }}
-              className="px-4 py-1.5 border-2 border-r-0 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#00ffcc] transition-all uppercase cursor-pointer"
-            >
-              EXECUTE
-            </button>
-            <button 
-              onClick={() => setIsExecuteMenuOpen(!isExecuteMenuOpen)}
-              className="px-2 py-1.5 border-2 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm hover:bg-[#161616] hover:text-[#00ffcc] transition-all cursor-pointer"
-            >
-              ▼
-            </button>
+                  // Reset node visual highlights
+                  setNodes(nds => nds.map(n => ({ ...n, className: '' })));
+                  alert('Execution stopped.');
+                }}
+                className="px-4 py-1.5 border-2 border-[#ff4444] bg-[#ff4444] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#ff4444] transition-all uppercase cursor-pointer"
+              >
+                STOP WORKFLOW
+              </button>
+            ) : (
+              <>
+                <button 
+                  onClick={async () => {
+                    try {
+                      setNodes(nds => nds.map(n => ({ ...n, className: '' })));
+                      
+                      const engineNodes = nodes.map(n => ({
+                        id: n.id,
+                        type: n.data.type || n.data.label.replace(/\s+/g, ''),
+                        parameters: n.data.parameters || {}
+                      }));
+                      const engineConnections = edges.map(e => ({
+                        source: e.source,
+                        target: e.target
+                      }));
+
+                      const triggerNode = engineNodes.find(n => n.type === 'Webhook');
+                      const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
+
+                      if (!startId) return alert('Add nodes to execute');
+
+                      setExecutionMode('running');
+                      const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          startingNodeId: startId, 
+                          mode: 'manual',
+                          nodes: engineNodes,
+                          connections: engineConnections
+                        })
+                      });
+                      const data = await res.json();
+                      if (data.status !== 'success') {
+                        alert(`Execution failed: ${data.message || 'Unknown error'}`);
+                        setExecutionMode('idle');
+                      } else {
+                        // Execution finished
+                        setExecutionMode('idle');
+                      }
+                    } catch (e: any) {
+                      alert(`Execution failed: ${e.message}`);
+                      setExecutionMode('idle');
+                    }
+                  }}
+                  className="px-4 py-1.5 border-2 border-r-0 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm tracking-widest hover:bg-[#161616] hover:text-[#00ffcc] transition-all uppercase cursor-pointer"
+                >
+                  EXECUTE
+                </button>
+                <button 
+                  onClick={() => setIsExecuteMenuOpen(!isExecuteMenuOpen)}
+                  className="px-2 py-1.5 border-2 border-[#00ffcc] bg-[#00ffcc] text-[#161616] font-bold text-sm hover:bg-[#161616] hover:text-[#00ffcc] transition-all cursor-pointer"
+                >
+                  ▼
+                </button>
+              </>
+            )}
             
             {isExecuteMenuOpen && (
               <div className="absolute top-full right-0 mt-2 w-56 bg-[#161616] border-2 border-[#333] shadow-lg shadow-black/50 flex flex-col z-50">

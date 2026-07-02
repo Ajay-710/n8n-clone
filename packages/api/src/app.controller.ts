@@ -66,7 +66,11 @@ export class AppController {
         // Create a default workspace first if none exists
         let workspace = await this.prisma.workspace.findFirst();
         if (!workspace) {
-          const org = await this.prisma.organization.create({ data: { name: 'Zaggonaut Org', userId: 'default-user' }});
+          let user = await this.prisma.user.findFirst();
+          if (!user) {
+            user = await this.prisma.user.create({ data: { id: 'default-user', email: 'admin@n7n.local', passwordHash: 'none' }});
+          }
+          const org = await this.prisma.organization.create({ data: { name: 'Zaggonaut Org', userId: user.id }});
           workspace = await this.prisma.workspace.create({ data: { name: 'Default Workspace', organizationId: org.id }});
         }
 
