@@ -242,8 +242,9 @@ function ConfigPanel({
   const outputData = executionData ? executionData[id] : null;
 
   return (
-    <div className="absolute inset-0 z-50 bg-[#161616] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-200">
-      {/* Header */}
+    <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-8 animate-in fade-in duration-200">
+      <div className="w-full max-w-6xl h-[85vh] bg-[#161616] flex flex-col border border-[#333] shadow-2xl rounded-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
+        {/* Header */}
       <header className="h-16 border-b-2 border-[#333] flex items-center px-6 shrink-0 justify-between bg-[#111]">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 bg-[#222] border-2 border-[#333] flex items-center justify-center">
@@ -273,7 +274,7 @@ function ConfigPanel({
               <button 
                 key={tab} 
                 onClick={() => setLeftTab(tab as any)}
-                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${leftTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc] bg-opacity-5' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
+                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${leftTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc]/10' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
               >
                 {tab}
               </button>
@@ -429,6 +430,25 @@ function ConfigPanel({
                     </div>
                   </>
                 )}
+
+                {!['HTTPRequest', 'IF', 'Set', 'Webhook', 'AIAgent'].includes(type) && type !== 'StickyNode' && (
+                  <div className="flex flex-col gap-2 h-full">
+                    <label className="text-xs font-bold text-[#e5e5e5] uppercase tracking-wider">Raw Parameters (JSON)</label>
+                    <textarea 
+                      rows={15}
+                      defaultValue={JSON.stringify(parameters, null, 2)} 
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value);
+                          // A bit hacky: we should probably have a bulk update method, but this works for simple edits
+                          Object.keys(parsed).forEach(k => updateNodeData(id, k, parsed[k]));
+                        } catch(err) {}
+                      }}
+                      className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors h-full min-h-[300px]" 
+                    />
+                    <span className="text-[10px] text-[#999] mt-1">This node type does not have a dedicated UI. Edit the raw parameters here.</span>
+                  </div>
+                )}
               </>
             )}
 
@@ -458,7 +478,7 @@ function ConfigPanel({
               <button 
                 key={tab} 
                 onClick={() => setRightTab(tab as any)}
-                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${rightTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc] bg-opacity-5' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
+                className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase border-b-2 transition-colors ${rightTab === tab ? 'border-[#00ffcc] text-[#00ffcc] bg-[#00ffcc]/10' : 'border-transparent text-[#999] hover:bg-[#222]'}`}
               >
                 {tab}
               </button>
