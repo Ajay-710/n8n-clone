@@ -10,7 +10,7 @@ export class EventsController {
   @Sse('executions')
   sse(): Observable<MessageEvent> {
     return fromEvent(this.eventEmitter, 'execution.event').pipe(
-      map((payload) => ({ data: payload }))
+      map((payload) => ({ data: payload as object }))
     );
   }
 }
