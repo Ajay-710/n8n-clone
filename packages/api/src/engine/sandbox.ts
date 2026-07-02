@@ -5,33 +5,48 @@ export class ExpressionSandbox {
    * Evaluates an n8n-style expression like {{$json.name}} or {{ $node["HTTP"].json.data }}
    */
   static evaluate(expression: string, contextData: Record<string, any>): any {
-    // If it's not a template expression, return as-is
-    if (typeof expression !== 'string' || !expression.includes('{{') || !expression.includes('}}')) {
+    if (typeof expression !== 'string' || !expression.includes('{{')) {
       return expression;
     }
 
-    try {
-      // Extract everything inside {{ }}
-      const code = expression.replace(/^{{/, '').replace(/}}$/, '').trim();
-      
-      // Create a secure context
-      const context = vm.createContext({
-        $json: contextData.$json || {},
-        $env: process.env,
-        $node: contextData.$node || {},
-        $now: new Date().toISOString(),
-      });
+    const context = vm.createContext({
+      $json: contextData.$json || {},
+      $env: process.env,
+      $node: contextData.$node || {},
+      $now: new Date().toISOString(),
+      $today: new Date().toISOString().split('T')[0],
+      Math: Math,
+      Date: Date,
+      JSON: JSON,
+      String: String,
+      Number: Number,
+      Array: Array,
+      Object: Object,
+      parseInt: parseInt,
+      parseFloat: parseFloat
+    });
 
-      // Execute code securely
-      const result = vm.runInContext(code, context, {
-        timeout: 1000, // 1 second max execution time to prevent infinite loops
-      });
-      
-      return result;
-    } catch (error) {
-      console.error(`Expression evaluation failed for "${expression}":`, error.message);
-      return null;
+    // If the expression is purely exactly one {{ ... }} block, return the exact evaluated type (object, boolean, etc.)
+    const exactMatch = expression.match(/^\{\{(.*?)\}\}$/);
+    if (exactMatch) {
+      try {
+        return vm.runInContext(exactMatch[1].trim(), context, { timeout: 1000 });
+      } catch (error: any) {
+        console.error(`Expression evaluation failed for "${expression}":`, error.message);
+        return null;
+      }
     }
+
+    // Otherwise, replace all occurrences inline and cast to string
+    return expression.replace(/\{\{(.*?)\}\}/g, (match, code) => {
+      try {
+        const result = vm.runInContext(code.trim(), context, { timeout: 1000 });
+        return typeof result === 'object' ? JSON.stringify(result) : String(result);
+      } catch (error: any) {
+        console.error(`Inline expression evaluation failed for "${code}":`, error.message);
+        return match; // leave unresolved
+      }
+    });
   }
 
   /**
