@@ -124,7 +124,21 @@ export class AppController {
   @Delete('workflows/:id')
   async deleteWorkflow(@Param('id') workflowId: string) {
     try {
+      // Find all versions of this workflow
+      const versions = await this.prisma.workflowVersion.findMany({ where: { workflowId } });
+      const versionIds = versions.map(v => v.id);
+      
+      // Cascade delete executions
+      if (versionIds.length > 0) {
+        await this.prisma.execution.deleteMany({ where: { workflowVersionId: { in: versionIds } } });
+      }
+      
+      // Cascade delete versions
+      await this.prisma.workflowVersion.deleteMany({ where: { workflowId } });
+      
+      // Delete workflow
       await this.prisma.workflow.delete({ where: { id: workflowId } });
+      
       return { status: 'success' };
     } catch (e: any) {
       return { status: 'error', message: e.message };
