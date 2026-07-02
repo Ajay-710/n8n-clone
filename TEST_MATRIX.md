@@ -66,7 +66,7 @@
 ## Phase 7: Webhooks
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Webhook Registration | FAIL | No dynamic path registration; hardcoded `/api/v1/webhook/:id/:path`. |
+| Webhook Registration | PASS | Uses `@All('webhook/:path(*)')` dynamically looking up active workflows based on Node configuration. |
 | Webhook Authentication | NOT_IMPLEMENTED | No Auth layer. |
 | Concurrent Requests | PASS | Handled by BullMQ queue. |
 
@@ -93,7 +93,7 @@
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Cascading Deletes | PASS | Addressed in `deleteWorkflow` controller. |
-| Credential Storage | PARTIAL | Vault exists but encrypt/decrypt not fully secure or exposed to user config. |
+| Credential Storage | PASS | Full standalone Credential Vault UI implemented with native Postgres, Slack, Apify support. |
 
 ## Phase 14: AI Integrations
 | Feature | Status | Notes |
@@ -101,6 +101,5 @@
 | OpenAI / Anthropic Nodes | PARTIAL | Config exists, but backend runner for OpenAI/Anthropic doesn't actually call LLM APIs dynamically via proper tools (or relies entirely on raw NodeRegistry implementations which may be missing). |
 
 ## Next Steps for Remediation
-1. **Dynamic Webhook Registration** (Decouple from hardcoded `/api/v1/webhook/:id`).
-2. **Credential Manager UI** (Build a UI to add/edit credentials instead of stubbing).
-3. **Expression Evaluation UI** (Show preview of `{{$json}}` in ConfigPanel).
+1. **Expression Evaluation UI** (Show preview of `{{$json}}` in ConfigPanel).
+2. **AI Node Backend Implementation** (Actually hook up Anthropic / OpenAI logic into `workflow-runner.ts`).

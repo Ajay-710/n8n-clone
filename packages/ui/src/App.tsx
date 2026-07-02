@@ -287,7 +287,8 @@ function ConfigPanel({
   executionData,
   credentials,
   onClose,
-  onExecuteNode
+  onExecuteNode,
+  inputData
 }: { 
   selectedNode: Node | null, 
   updateNodeData: (id: string, key: string, value: any) => void, 
@@ -295,7 +296,8 @@ function ConfigPanel({
   executionData?: Record<string, any>,
   credentials: any[],
   onClose: () => void,
-  onExecuteNode: (id: string) => void
+  onExecuteNode: (id: string) => void,
+  inputData?: any
 }) {
   const [middleTab, setMiddleTab] = useState<'parameters' | 'settings'>('parameters');
 
@@ -305,6 +307,21 @@ function ConfigPanel({
   const type = data?.type || selectedNode.type;
   const parameters = data.parameters || {};
   const outputData = executionData ? executionData[id] : null;
+
+  const evaluateExpression = (expr: string) => {
+    if (!expr || !expr.includes('{{')) return null;
+    if (!inputData) return 'Requires input data to evaluate';
+    try {
+      return expr.replace(/\{\{([\s\S]+?)\}\}/g, (_, code) => {
+        const $json = Array.isArray(inputData) ? inputData[0] : inputData;
+        const fn = new Function('$json', `try { return ${code}; } catch(e) { return "[Error]"; }`);
+        const result = fn($json);
+        return typeof result === 'object' ? JSON.stringify(result) : String(result);
+      });
+    } catch (e) {
+      return `[Eval Error]`;
+    }
+  };
 
   return (
     <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-8 animate-in fade-in duration-200">
@@ -337,12 +354,17 @@ function ConfigPanel({
           <div className="h-12 border-b-2 border-[#333] flex items-center px-4">
             <span className="text-xs font-bold tracking-widest uppercase text-[#999]">Input</span>
           </div>
-          <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center">
-            {/* Input is currently mocked since we don't track per-edge execution states in UI yet */}
-            <div className="text-center text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8 w-full">
-              No input data.<br/><br/>
-              <button className="px-4 py-2 mt-4 bg-[#ff6600] text-[#161616] font-bold border-2 border-[#ff6600] hover:bg-transparent hover:text-[#ff6600] transition-colors rounded-sm">Execute previous nodes</button>
-            </div>
+          <div className="flex-1 overflow-auto p-4 flex flex-col">
+            {inputData ? (
+              <pre className="text-[10px] text-[#00ffcc] font-mono break-all whitespace-pre-wrap">
+                {JSON.stringify(inputData, null, 2)}
+              </pre>
+            ) : (
+              <div className="text-center text-[#666] text-xs uppercase tracking-widest border-2 border-dashed border-[#333] p-8 w-full my-auto">
+                No input data.<br/><br/>
+                <button onClick={() => onExecuteNode(id)} className="px-4 py-2 mt-4 bg-[#ff6600] text-[#161616] font-bold border-2 border-[#ff6600] hover:bg-transparent hover:text-[#ff6600] transition-colors rounded-sm cursor-pointer">Execute Step</button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -427,6 +449,12 @@ function ConfigPanel({
                       className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                     />
                     <span className="text-[10px] text-[#999] mt-1">Use JavaScript expressions to evaluate data from previous nodes.</span>
+                    {evaluateExpression(parameters.condition) && (
+                      <div className="mt-2 p-2 bg-[#111] border border-[#333] text-[10px] text-[#999] font-mono break-all">
+                        <span className="text-[#00ffcc] font-bold uppercase block mb-1">Preview</span>
+                        {evaluateExpression(parameters.condition)}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -440,6 +468,12 @@ function ConfigPanel({
                       placeholder='{"key": "value", "dynamic": "{{$json.id}}"}'
                       className="bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none font-mono transition-colors" 
                     />
+                    {evaluateExpression(parameters.value) && (
+                      <div className="mt-2 p-2 bg-[#111] border border-[#333] text-[10px] text-[#999] font-mono whitespace-pre-wrap">
+                        <span className="text-[#00ffcc] font-bold uppercase block mb-1">Preview</span>
+                        {evaluateExpression(parameters.value)}
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -1174,6 +1208,9 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
   };
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
+  const activeExecData = selectedExecution ? selectedExecution.executionData : executions[0]?.executionData;
+  const incomingEdge = edges.find(e => e.target === selectedNodeId);
+  const activeInputData = incomingEdge && activeExecData ? activeExecData[incomingEdge.source] : null;
 
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
@@ -1391,10 +1428,11 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
                 selectedNode={selectedNode} 
                 updateNodeData={updateNodeData} 
                 deleteNode={deleteNode} 
-                executionData={selectedExecution ? selectedExecution.executionData : executions[0]?.executionData}
+                executionData={activeExecData}
                 credentials={credentialsList}
                 onClose={() => setSelectedNodeId(null)}
                 onExecuteNode={runExecution}
+                inputData={activeInputData}
               />
             )}</div>
     </div>
