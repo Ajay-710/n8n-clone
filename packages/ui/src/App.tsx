@@ -10,7 +10,12 @@ import ReactFlow, {
   ReactFlowProvider,
 } from 'reactflow';
 import type { ReactFlowInstance, Connection, Edge, Node } from 'reactflow';
+import CustomNode from './components/CustomNode';
 import 'reactflow/dist/style.css';
+
+const nodeTypes = {
+  default: CustomNode
+};
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -69,38 +74,80 @@ function Sidebar({ isOpen = true, onToggle, currentView, setView }: { isOpen?: b
   );
 }
 
-function NodePicker({ onDragStart }: { onDragStart: (event: React.DragEvent, type: string, label: string) => void }) {
-  const [isOpen, setIsOpen] = useState(false);
+const NODE_CATALOG = [
+  { type: 'Webhook', label: 'Webhook', category: 'Triggers', description: 'Starts workflow on HTTP request', icon: '⚡' },
+  { type: 'ManualTrigger', label: 'Manual Trigger', category: 'Triggers', description: 'Starts workflow when clicking Execute', icon: '▶️' },
+  { type: 'HTTPRequest', label: 'HTTP Request', category: 'Actions', description: 'Make an HTTP request', icon: '🌐' },
+  { type: 'AIAgent', label: 'AI Agent', category: 'AI', description: 'Run an AI prompt', icon: '🧠' },
+  { type: 'Set', label: 'Set Data', category: 'Data', description: 'Set specific values', icon: '🔧' },
+  { type: 'IF', label: 'IF Condition', category: 'Logic', description: 'Branch based on condition', icon: '🔀' },
+];
+
+function NodePicker({ 
+  isOpen, 
+  setIsOpen,
+  onDragStart,
+  onAddNode
+}: { 
+  isOpen: boolean,
+  setIsOpen: (o: boolean) => void,
+  onDragStart: (event: React.DragEvent, type: string, label: string) => void,
+  onAddNode: (type: string, label: string) => void
+}) {
+  const [search, setSearch] = useState('');
+
+  const filteredNodes = NODE_CATALOG.filter(n => 
+    n.label.toLowerCase().includes(search.toLowerCase()) || 
+    n.type.toLowerCase().includes(search.toLowerCase()) ||
+    n.category.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="absolute bottom-8 right-[340px] z-50 flex flex-col items-end gap-4">
+    <div className="absolute bottom-8 right-8 z-50 flex flex-col items-end gap-4 pointer-events-none">
       {isOpen && (
-        <div className="w-64 bg-[#161616] border-2 border-[#333] p-4 shadow-lg shadow-black/50 max-h-96 overflow-y-auto">
-          <h3 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-xs border-b-2 border-[#333] pb-2">Add Node</h3>
-          <div className="flex flex-col gap-2">
-            {[
-              { type: 'Webhook', label: 'Webhook Trigger' },
-              { type: 'HTTPRequest', label: 'HTTP Request' },
-              { type: 'AIAgent', label: 'AI Agent' },
-              { type: 'Set', label: 'Set Data' },
-              { type: 'IF', label: 'IF Condition' }
-            ].map(node => (
-              <div 
-                key={node.type}
-                className="border-2 border-[#333] bg-[#222] text-[#e5e5e5] p-2 text-xs font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-                onDragStart={(event) => onDragStart(event, node.type, node.label)}
-                draggable
-              >
-                {node.label}
+        <div className="w-80 bg-[#161616] border-2 border-[#333] flex flex-col shadow-lg shadow-black/80 max-h-[500px] pointer-events-auto animate-in slide-in-from-bottom-2 fade-in duration-150">
+          <div className="p-4 border-b-2 border-[#333] bg-[#111]">
+            <h3 className="text-[#00ffcc] font-bold tracking-widest uppercase text-xs mb-3">Add Node</h3>
+            <input 
+              autoFocus
+              type="text" 
+              placeholder="Search nodes (e.g. HTTP, AI)..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-[#161616] border-2 border-[#333] focus:border-[#00ffcc] p-2 text-sm text-[#e5e5e5] outline-none transition-colors font-mono"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {filteredNodes.length === 0 ? (
+              <div className="text-center p-4 text-[#666] text-xs uppercase tracking-widest">No nodes found</div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {filteredNodes.map(node => (
+                  <div 
+                    key={node.type}
+                    onClick={() => { onAddNode(node.type, node.label); setIsOpen(false); }}
+                    onDragStart={(event) => onDragStart(event, node.type, node.label)}
+                    draggable
+                    className="flex items-center gap-3 p-3 border-2 border-transparent hover:border-[#333] hover:bg-[#222] cursor-pointer transition-colors group"
+                  >
+                    <div className="w-10 h-10 bg-[#111] border-2 border-[#333] flex items-center justify-center text-lg shrink-0 group-hover:border-[#00ffcc] transition-colors">
+                      {node.icon}
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                      <div className="text-sm font-bold text-[#e5e5e5] truncate">{node.label}</div>
+                      <div className="text-[10px] text-[#999] uppercase tracking-wider truncate">{node.category} &bull; {node.description}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-[#161616] text-[#e5e5e5] rounded-none border-2 border-[#e5e5e5] font-bold text-3xl hover:bg-[#e5e5e5] hover:text-[#161616] transition-all shadow-lg flex items-center justify-center pb-1 cursor-pointer"
-        title="Add Nodes"
+        className="w-14 h-14 bg-[#161616] text-[#e5e5e5] rounded-none border-2 border-[#e5e5e5] font-bold text-3xl hover:bg-[#e5e5e5] hover:text-[#161616] transition-all shadow-lg flex items-center justify-center pb-1 cursor-pointer pointer-events-auto"
+        title="Add Nodes (Space or Right-Click)"
       >
         {isOpen ? '×' : '+'}
       </button>
@@ -400,6 +447,20 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
   const [isExecuteMenuOpen, setIsExecuteMenuOpen] = useState(false);
   const [executionMode, setExecutionMode] = useState<'idle' | 'waiting' | 'running'>('idle');
 
+  // Node Picker State
+  const [isNodePickerOpen, setIsNodePickerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && (e.target as HTMLElement).tagName !== 'INPUT' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setIsNodePickerOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   useEffect(() => {
     const sse = new EventSource('/api/v1/events/executions');
     sse.onmessage = (e) => {
@@ -496,6 +557,22 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
   }, []);
+
+  const onPaneContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsNodePickerOpen(true);
+  }, []);
+
+  const onAddNode = useCallback((type: string, label: string) => {
+    const position = reactFlowInstance ? reactFlowInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 }) : { x: 100, y: 100 };
+    const newNode: Node = {
+      id: getId(),
+      type: 'default',
+      position,
+      data: { label, type, parameters: {} },
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [reactFlowInstance, setNodes]);
 
   const updateNodeData = useCallback((id: string, key: string, value: any) => {
     setNodes((nds) =>
@@ -826,6 +903,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            nodeTypes={nodeTypes}
             onNodesChange={showExecutions ? undefined : onNodesChange}
             onEdgesChange={showExecutions ? undefined : onEdgesChange}
             onConnect={showExecutions ? undefined : onConnect}
@@ -834,6 +912,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
             onDragOver={showExecutions ? undefined : onDragOver}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
+            onPaneContextMenu={onPaneContextMenu}
             fitView
             minZoom={0.05}
             maxZoom={4}
@@ -847,7 +926,7 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
             />
             <Background variant={BackgroundVariant.Dots} gap={20} size={2} color="#333333" />
           </ReactFlow>
-          {!showExecutions && <NodePicker onDragStart={onDragStart} />}
+          {!showExecutions && <NodePicker isOpen={isNodePickerOpen} setIsOpen={setIsNodePickerOpen} onDragStart={onDragStart} onAddNode={onAddNode} />}
         </main>
         
         
