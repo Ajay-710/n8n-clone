@@ -525,6 +525,12 @@ function FlowBuilder({ workflowId }: { workflowId: string }) {
       <header className="h-16 border-b-2 border-[#333] flex items-center px-6 bg-[#161616] z-10 shrink-0">
         <h2 className="font-bold text-[#e5e5e5] tracking-widest uppercase">Editor</h2>
         
+        {executionMode !== 'idle' && (
+          <div className="ml-4 px-2 py-1 bg-[#222] border border-[#333] text-[10px] text-[#00ffcc] uppercase font-bold tracking-widest animate-pulse">
+            {executionMode}
+          </div>
+        )}
+        
         <div className="ml-auto flex items-center gap-4">
           <button
             onClick={() => {
