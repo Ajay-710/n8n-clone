@@ -18,20 +18,15 @@ const initialEdges: Edge[] = [];
 let id = Date.now();
 const getId = () => `node_${id++}`;
 
-const WORKFLOW_ID = 'default-workflow';
+const DEFAULT_WORKFLOW_ID = 'default-workflow';
 
-function Sidebar({ isOpen = true, onToggle }: { isOpen?: boolean, onToggle?: () => void }) {
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
-    event.dataTransfer.setData('application/label', label);
-    event.dataTransfer.effectAllowed = 'move';
-  };
+function Sidebar({ isOpen = true, onToggle, currentView, setView }: { isOpen?: boolean, onToggle?: () => void, currentView: string, setView: (v: string) => void }) {
   if (!isOpen) {
     return (
       <button 
         onClick={onToggle}
         className="absolute top-4 left-4 z-50 p-2 px-3 bg-[#161616] border-2 border-[#e5e5e5] text-[#e5e5e5] hover:bg-[#e5e5e5] hover:text-[#161616] transition-all cursor-pointer font-bold text-xs tracking-widest"
-        title="Open Nodes Panel"
+        title="Open Navigation"
       >
         &gt;&gt;
       </button>
@@ -39,60 +34,126 @@ function Sidebar({ isOpen = true, onToggle }: { isOpen?: boolean, onToggle?: () 
   }
 
   return (
-    <aside className="w-64 border-r-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative shrink-0">
-      <div className="flex justify-between items-center mb-4 border-b-2 border-[#333] pb-2">
-        <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase">Nodes</h2>
+    <aside className="w-64 border-r-2 border-[#333] bg-[#161616] flex flex-col z-10 shrink-0 relative h-full">
+      <div className="flex justify-between items-center mb-4 border-b-2 border-[#333] p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#e5e5e5] bg-[#161616] flex items-center justify-center">
+            <span className="text-[#e5e5e5] font-bold text-lg uppercase">N</span>
+          </div>
+          <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase">n7n</h2>
+        </div>
         <button 
           onClick={onToggle}
           className="text-[#999] hover:text-[#e5e5e5] font-bold text-sm tracking-widest transition-colors cursor-pointer"
-          title="Close Nodes Panel"
+          title="Close Navigation"
         >
           &lt;&lt;
         </button>
       </div>
       
-      <div className="text-[#e5e5e5] text-xs mb-2">Drag nodes to canvas:</div>
-      
-      <div 
-        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'Webhook', 'Webhook Trigger')}
-        draggable
-      >
-        Webhook Trigger
-      </div>
-
-      <div 
-        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'HTTPRequest', 'HTTP Request')}
-        draggable
-      >
-        HTTP Request
-      </div>
-      
-      <div 
-        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'AIAgent', 'AI Agent')}
-        draggable
-      >
-        AI Agent
-      </div>
-
-      <div 
-        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'Set', 'Set Data')}
-        draggable
-      >
-        Set Data
-      </div>
-
-      <div 
-        className="border-2 border-[#e5e5e5] bg-[#161616] text-[#e5e5e5] p-3 text-sm font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
-        onDragStart={(event) => onDragStart(event, 'IF', 'IF Condition')}
-        draggable
-      >
-        IF Condition
-      </div>
+      <nav className="flex flex-col gap-2 px-4">
+        <button 
+          onClick={() => setView('dashboard')}
+          className={`p-3 text-sm font-bold tracking-widest uppercase text-left transition-all ${currentView === 'dashboard' ? 'bg-[#e5e5e5] text-[#161616]' : 'text-[#999] hover:bg-[#333] hover:text-[#e5e5e5]'}`}
+        >
+          Workflows
+        </button>
+        <button 
+          onClick={() => setView('workflow')}
+          className={`p-3 text-sm font-bold tracking-widest uppercase text-left transition-all ${currentView === 'workflow' ? 'bg-[#e5e5e5] text-[#161616]' : 'text-[#999] hover:bg-[#333] hover:text-[#e5e5e5]'}`}
+        >
+          Editor View
+        </button>
+      </nav>
     </aside>
+  );
+}
+
+function NodePicker({ onDragStart }: { onDragStart: (event: React.DragEvent, type: string, label: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="absolute bottom-8 right-[340px] z-50 flex flex-col items-end gap-4">
+      {isOpen && (
+        <div className="w-64 bg-[#161616] border-2 border-[#333] p-4 shadow-lg shadow-black/50 max-h-96 overflow-y-auto">
+          <h3 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-xs border-b-2 border-[#333] pb-2">Add Node</h3>
+          <div className="flex flex-col gap-2">
+            {[
+              { type: 'Webhook', label: 'Webhook Trigger' },
+              { type: 'HTTPRequest', label: 'HTTP Request' },
+              { type: 'AIAgent', label: 'AI Agent' },
+              { type: 'Set', label: 'Set Data' },
+              { type: 'IF', label: 'IF Condition' }
+            ].map(node => (
+              <div 
+                key={node.type}
+                className="border-2 border-[#333] bg-[#222] text-[#e5e5e5] p-2 text-xs font-bold cursor-grab hover:bg-[#e5e5e5] hover:text-[#161616] transition-all uppercase text-center"
+                onDragStart={(event) => onDragStart(event, node.type, node.label)}
+                draggable
+              >
+                {node.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-14 h-14 bg-[#161616] text-[#e5e5e5] rounded-none border-2 border-[#e5e5e5] font-bold text-3xl hover:bg-[#e5e5e5] hover:text-[#161616] transition-all shadow-lg flex items-center justify-center pb-1 cursor-pointer"
+        title="Add Nodes"
+      >
+        {isOpen ? '×' : '+'}
+      </button>
+    </div>
+  );
+}
+
+function Dashboard({ onOpenWorkflow }: { onOpenWorkflow: (id: string) => void }) {
+  const [workflows, setWorkflows] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/v1/workflows')
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success' || data.status === 'mock_fallback') {
+          setWorkflows(data.data);
+        }
+      });
+  }, []);
+
+  return (
+    <div className="flex-1 bg-[#161616] p-8 overflow-y-auto text-[#e5e5e5] font-mono h-full">
+      <div className="flex justify-between items-center mb-12 border-b-2 border-[#333] pb-4">
+        <h1 className="text-3xl font-bold tracking-widest uppercase text-[#e5e5e5]">Workflows</h1>
+        <button className="px-4 py-2 border-2 border-[#e5e5e5] bg-[#e5e5e5] text-[#161616] font-bold uppercase tracking-widest hover:bg-[#161616] hover:text-[#e5e5e5] transition-colors cursor-pointer">
+          + New Workflow
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {workflows.map(wf => (
+          <div 
+            key={wf.id} 
+            onClick={() => onOpenWorkflow(wf.id)}
+            className="border-2 border-[#333] bg-[#222] p-6 cursor-pointer hover:border-[#e5e5e5] transition-colors flex flex-col gap-4"
+          >
+            <div className="flex justify-between items-start">
+              <h3 className="font-bold text-lg">{wf.name || 'Untitled Workflow'}</h3>
+              <div className={`w-3 h-3 rounded-full ${wf.active !== false ? 'bg-[#00ffcc]' : 'bg-[#666]'}`}></div>
+            </div>
+            <div className="text-[#999] text-xs">ID: {wf.id}</div>
+            <button className="mt-4 px-3 py-1.5 border border-[#666] text-[#e5e5e5] text-xs font-bold uppercase tracking-widest hover:bg-[#333]">
+              Open Editor
+            </button>
+          </div>
+        ))}
+        {workflows.length === 0 && (
+          <div className="col-span-full text-center text-[#666] p-12 border-2 border-dashed border-[#333]">
+            No workflows found.
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -109,7 +170,7 @@ function ConfigPanel({
 }) {
   if (!selectedNode) {
     return (
-      <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10">
+      <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 shrink-0">
         <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">Config</h2>
         <div className="text-[#666] text-sm text-center mt-10">Select a node to configure</div>
       </aside>
@@ -121,7 +182,7 @@ function ConfigPanel({
   const outputData = executionData ? executionData[id] : null;
 
   return (
-    <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative">
+    <aside className="w-80 border-l-2 border-[#333] bg-[#161616] p-4 flex flex-col gap-4 z-10 overflow-y-auto relative shrink-0">
       <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase mb-4 text-center border-b-2 border-[#333] pb-2">
         {executionData ? 'Execution Output' : 'Config: ' + data.label}
       </h2>
@@ -216,16 +277,13 @@ function ConfigPanel({
   );
 }
 
-function FlowBuilder() {
+function FlowBuilder({ workflowId }: { workflowId: string }) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  
-  // UI State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Execution Viewer State
   const [showExecutions, setShowExecutions] = useState(false);
@@ -234,7 +292,7 @@ function FlowBuilder() {
 
   // Load workflow on mount
   useEffect(() => {
-    fetch(`/api/v1/workflows/${WORKFLOW_ID}`)
+    fetch(`/api/v1/workflows/${workflowId}`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success' && data.data && data.data.WorkflowVersion?.[0]) {
@@ -247,10 +305,10 @@ function FlowBuilder() {
       
     // Fetch execution history
     fetchExecutions();
-  }, [setNodes, setEdges]);
+  }, [workflowId, setNodes, setEdges]);
 
   const fetchExecutions = () => {
-    fetch(`/api/v1/workflows/${WORKFLOW_ID}/executions`)
+    fetch(`/api/v1/workflows/${workflowId}/executions`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
@@ -333,7 +391,7 @@ function FlowBuilder() {
 
   const saveWorkflow = async () => {
     try {
-      await fetch(`/api/v1/workflows/${WORKFLOW_ID}`, {
+      await fetch(`/api/v1/workflows/${workflowId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodes, connections: edges })
@@ -431,15 +489,16 @@ function FlowBuilder() {
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
+    event.dataTransfer.setData('application/reactflow', nodeType);
+    event.dataTransfer.setData('application/label', label);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
-    <div className="w-screen h-screen flex flex-col text-[#e5e5e5] font-mono">
+    <div className="flex-1 flex flex-col overflow-hidden text-[#e5e5e5] font-mono relative">
       <header className="h-16 border-b-2 border-[#333] flex items-center px-6 bg-[#161616] z-10 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 border-2 border-[#e5e5e5] bg-[#161616] flex items-center justify-center">
-            <span className="text-[#e5e5e5] font-bold text-xl uppercase">N</span>
-          </div>
-          <h1 className="font-bold text-xl tracking-widest text-[#e5e5e5]">n7n</h1>
-        </div>
+        <h2 className="font-bold text-[#e5e5e5] tracking-widest uppercase">Editor</h2>
         
         <div className="ml-auto flex items-center gap-4">
           <button
@@ -494,13 +553,12 @@ function FlowBuilder() {
                   target: e.target
                 }));
 
-                // Find webhook trigger to start from
                 const triggerNode = engineNodes.find(n => n.type === 'Webhook');
                 const startId = triggerNode ? triggerNode.id : engineNodes[0]?.id;
 
                 if (!startId) return alert('Add nodes to execute');
 
-                const res = await fetch(`/api/v1/workflows/${WORKFLOW_ID}/execute`, {
+                const res = await fetch(`/api/v1/workflows/${workflowId}/execute`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
@@ -524,7 +582,7 @@ function FlowBuilder() {
       </header>
 
       <div className="flex flex-1 overflow-hidden relative bg-[#161616]">
-        {showExecutions ? (
+        {showExecutions && (
           <aside className="w-64 border-r-2 border-[#333] bg-[#161616] flex flex-col z-10 overflow-y-auto">
             <div className="p-4 border-b-2 border-[#333]">
               <h2 className="text-[#e5e5e5] font-bold tracking-widest uppercase text-sm">Execution History</h2>
@@ -560,8 +618,6 @@ function FlowBuilder() {
               )}
             </div>
           </aside>
-        ) : (
-          <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
         )}
         
         <main className="flex-1 h-full relative" ref={reactFlowWrapper}>
@@ -595,6 +651,7 @@ function FlowBuilder() {
             />
             <Background variant={BackgroundVariant.Dots} gap={20} size={2} color="#333333" />
           </ReactFlow>
+          {!showExecutions && <NodePicker onDragStart={onDragStart} />}
         </main>
         
         <ConfigPanel 
@@ -609,9 +666,30 @@ function FlowBuilder() {
 }
 
 export default function App() {
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeWorkflowId, setActiveWorkflowId] = useState(DEFAULT_WORKFLOW_ID);
+
   return (
-    <ReactFlowProvider>
-      <FlowBuilder />
-    </ReactFlowProvider>
+    <div className="w-screen h-screen flex text-[#e5e5e5] font-mono bg-[#161616]">
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
+        currentView={currentView}
+        setView={setCurrentView}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {currentView === 'dashboard' ? (
+          <Dashboard onOpenWorkflow={(id) => {
+            setActiveWorkflowId(id);
+            setCurrentView('workflow');
+          }} />
+        ) : (
+          <ReactFlowProvider>
+            <FlowBuilder workflowId={activeWorkflowId} />
+          </ReactFlowProvider>
+        )}
+      </div>
+    </div>
   );
 }
