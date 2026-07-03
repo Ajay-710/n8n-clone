@@ -77,12 +77,7 @@ function Sidebar({ isOpen = true, onToggle, currentView, setView }: { isOpen?: b
         >
           Credentials
         </button>
-        <button 
-          onClick={() => setView('workflow')}
-          className={`p-3 text-sm font-bold tracking-widest uppercase text-left transition-all ${currentView === 'workflow' ? 'bg-[#e5e5e5] text-[#161616]' : 'text-[#999] hover:bg-[#333] hover:text-[#e5e5e5]'}`}
-        >
-          Editor View
-        </button>
+
       </nav>
     </aside>
   );

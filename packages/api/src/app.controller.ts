@@ -220,6 +220,18 @@ export class AppController {
     };
   }
 
+  @Delete('credentials/:id')
+  async deleteCredential(@Param('id') id: string) {
+    try {
+      await this.prisma.credential.delete({ where: { id } });
+      return { status: 'success' };
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
+  }
+
+
+
   @All('webhook/*path')
   async handleDynamicWebhook(@Param('path') path: string, @Req() req: any, @Body() body: any) {
     try {
