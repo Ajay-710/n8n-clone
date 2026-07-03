@@ -34,7 +34,7 @@
 | Basic Node Config | PASS | Left/Right panes implemented. |
 | Fallback Raw JSON | PASS | Exists for nodes lacking dedicated UI. |
 | Apify / GoogleSheets UI | PASS | Dropdowns and inputs exist. |
-| Missing Node UI | PASS | Slack, Postgres now have full typed inputs. HTTP Request still raw JSON but ok for now. |
+| Missing Node UI | PASS | Entire node library is now driven by a dynamic `NODE_SCHEMAS` system mimicking n8n. No more hardcoded JSX forms! |
 
 ## Phase 4: Node Configuration
 | Feature | Status | Notes |
